@@ -14,9 +14,10 @@
 
 <title>My Final Project Template</title>
 
+<script src="site_libs/header-attrs-2.4.6/header-attrs.js"></script>
 <script src="site_libs/jquery-1.12.4/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<link href="site_libs/bootstrap-3.3.5/css/simplex.min.css" rel="stylesheet" />
+<link href="site_libs/bootstrap-3.3.5/css/lumen.min.css" rel="stylesheet" />
 <script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
 <script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
 <script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
@@ -26,8 +27,11 @@
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/anchor-sections-1.0/anchor-sections.css" rel="stylesheet" />
+<script src="site_libs/anchor-sections-1.0/anchor-sections.js"></script>
 <script src="site_libs/kePrint-0.0.1/kePrint.js"></script>
-<script src="site_libs/htmlwidgets-1.5.1/htmlwidgets.js"></script>
+<link href="site_libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
+<script src="site_libs/htmlwidgets-1.5.2/htmlwidgets.js"></script>
 <link href="site_libs/leaflet-1.3.1/leaflet.css" rel="stylesheet" />
 <script src="site_libs/leaflet-1.3.1/leaflet.js"></script>
 <link href="site_libs/leafletfix-1.0.0/leafletfix.css" rel="stylesheet" />
@@ -35,6 +39,16 @@
 <script src="site_libs/Proj4Leaflet-1.0.1/proj4leaflet.js"></script>
 <link href="site_libs/rstudio_leaflet-1.3.1/rstudio_leaflet.css" rel="stylesheet" />
 <script src="site_libs/leaflet-binding-2.0.3/leaflet.js"></script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+      .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
 
 <style type="text/css">code{white-space: pre;}</style>
 <style type="text/css">
@@ -116,33 +130,33 @@ summary {
 <style type="text/css">
 /* padding for bootstrap navbar */
 body {
-  padding-top: 41px;
+  padding-top: 54px;
   padding-bottom: 40px;
 }
 /* offset scroll position for anchor links (for fixed navbar)  */
 .section h1 {
-  padding-top: 46px;
-  margin-top: -46px;
+  padding-top: 59px;
+  margin-top: -59px;
 }
 .section h2 {
-  padding-top: 46px;
-  margin-top: -46px;
+  padding-top: 59px;
+  margin-top: -59px;
 }
 .section h3 {
-  padding-top: 46px;
-  margin-top: -46px;
+  padding-top: 59px;
+  margin-top: -59px;
 }
 .section h4 {
-  padding-top: 46px;
-  margin-top: -46px;
+  padding-top: 59px;
+  margin-top: -59px;
 }
 .section h5 {
-  padding-top: 46px;
-  margin-top: -46px;
+  padding-top: 59px;
+  margin-top: -59px;
 }
 .section h6 {
-  padding-top: 46px;
-  margin-top: -46px;
+  padding-top: 59px;
+  margin-top: -59px;
 }
 .dropdown-submenu {
   position: relative;
@@ -346,7 +360,7 @@ div.tocify {
 
 
 
-<div class="navbar navbar-inverse  navbar-fixed-top" role="navigation">
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
   <div class="container">
     <div class="navbar-header">
       <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
@@ -450,172 +464,172 @@ value
 <tbody>
 <tr>
 <td style="text-align:center;">
--107.26
+27.84
 </td>
 <td style="text-align:center;">
-9.30
+40.96
 </td>
 <td style="text-align:center;">
-11.36
-</td>
-<td style="text-align:center;">
-c
-</td>
-<td style="text-align:center;">
--1.77
-</td>
-</tr>
-<tr>
-<td style="text-align:center;">
--111.14
-</td>
-<td style="text-align:center;">
--29.83
-</td>
-<td style="text-align:center;">
-10.72
+5.00
 </td>
 <td style="text-align:center;">
 c
 </td>
 <td style="text-align:center;">
--0.11
+1.56
 </td>
 </tr>
 <tr>
 <td style="text-align:center;">
-110.32
+-125.19
 </td>
 <td style="text-align:center;">
--31.88
+-32.11
 </td>
 <td style="text-align:center;">
-14.28
-</td>
-<td style="text-align:center;">
-d
-</td>
-<td style="text-align:center;">
-0.70
-</td>
-</tr>
-<tr>
-<td style="text-align:center;">
-51.00
-</td>
-<td style="text-align:center;">
--4.69
-</td>
-<td style="text-align:center;">
-15.94
-</td>
-<td style="text-align:center;">
-e
-</td>
-<td style="text-align:center;">
-0.11
-</td>
-</tr>
-<tr>
-<td style="text-align:center;">
--31.76
-</td>
-<td style="text-align:center;">
-12.75
-</td>
-<td style="text-align:center;">
-6.32
-</td>
-<td style="text-align:center;">
-c
-</td>
-<td style="text-align:center;">
--1.18
-</td>
-</tr>
-<tr>
-<td style="text-align:center;">
--154.28
-</td>
-<td style="text-align:center;">
--40.69
-</td>
-<td style="text-align:center;">
-6.96
+6.73
 </td>
 <td style="text-align:center;">
 a
 </td>
 <td style="text-align:center;">
-0.48
+-0.35
 </td>
 </tr>
 <tr>
 <td style="text-align:center;">
-101.27
+12.52
 </td>
 <td style="text-align:center;">
--41.97
+-12.22
 </td>
 <td style="text-align:center;">
-10.14
+5.68
 </td>
 <td style="text-align:center;">
-b
+a
 </td>
 <td style="text-align:center;">
--0.59
-</td>
-</tr>
-<tr>
-<td style="text-align:center;">
-9.98
-</td>
-<td style="text-align:center;">
--16.61
-</td>
-<td style="text-align:center;">
-9.76
-</td>
-<td style="text-align:center;">
-c
-</td>
-<td style="text-align:center;">
--0.83
+1.07
 </td>
 </tr>
 <tr>
 <td style="text-align:center;">
-63.27
+34.23
 </td>
 <td style="text-align:center;">
--39.94
+32.92
 </td>
 <td style="text-align:center;">
-6.24
+5.87
+</td>
+<td style="text-align:center;">
+a
+</td>
+<td style="text-align:center;">
+-0.16
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+176.36
+</td>
+<td style="text-align:center;">
+-57.56
+</td>
+<td style="text-align:center;">
+13.71
+</td>
+<td style="text-align:center;">
+a
+</td>
+<td style="text-align:center;">
+1.86
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+-79.61
+</td>
+<td style="text-align:center;">
+20.25
+</td>
+<td style="text-align:center;">
+10.28
 </td>
 <td style="text-align:center;">
 d
 </td>
 <td style="text-align:center;">
--1.88
+0.87
 </td>
 </tr>
 <tr>
 <td style="text-align:center;">
-120.75
+74.19
 </td>
 <td style="text-align:center;">
-6.98
+23.50
 </td>
 <td style="text-align:center;">
-13.83
+17.16
+</td>
+<td style="text-align:center;">
+a
+</td>
+<td style="text-align:center;">
+-0.42
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+49.41
+</td>
+<td style="text-align:center;">
+10.89
+</td>
+<td style="text-align:center;">
+10.24
 </td>
 <td style="text-align:center;">
 e
 </td>
 <td style="text-align:center;">
--0.95
+-1.58
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+171.97
+</td>
+<td style="text-align:center;">
+17.73
+</td>
+<td style="text-align:center;">
+8.31
+</td>
+<td style="text-align:center;">
+b
+</td>
+<td style="text-align:center;">
+0.42
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+-168.25
+</td>
+<td style="text-align:center;">
+-55.71
+</td>
+<td style="text-align:center;">
+15.72
+</td>
+<td style="text-align:center;">
+b
+</td>
+<td style="text-align:center;">
+-0.17
 </td>
 </tr>
 </tbody>
@@ -634,8 +648,8 @@ e
   addPopups(~x[2], ~y[2], &quot;Random popup&quot;)
 m  # a map with the default OSM tile layer</code></pre>
 <div class="figure">
-<div id="htmlwidget-30fe21b4c0b9f4d96b62" style="width:576px;height:288px;" class="leaflet html-widget"></div>
-<script type="application/json" data-for="htmlwidget-30fe21b4c0b9f4d96b62">{"x":{"options":{"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}}},"calls":[{"method":"addTiles","args":["//{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",null,null,{"minZoom":0,"maxZoom":18,"tileSize":256,"subdomains":"abc","errorTileUrl":"","tms":false,"noWrap":false,"zoomOffset":0,"zoomReverse":false,"opacity":1,"zIndex":1,"detectRetina":false,"attribution":"&copy; <a href=\"http://openstreetmap.org\">OpenStreetMap<\/a> contributors, <a href=\"http://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA<\/a>"}]},{"method":"addCircleMarkers","args":[[9.30170754902065,-29.8280154448003,-31.8831084296107,-4.68705408275127,12.7471503429115,-40.6861814763397,-41.9714264106005,-16.6061587259173,-39.9376808758825,6.97950504720211,-56.0505143646151,28.2724470645189,7.67273761332035,-56.2407155614346,-18.906586188823,-5.07408133707941,51.0753118805587,26.2375680729747,-17.2111759800464,-46.0531650390476],[-107.258561421186,-111.136349346489,110.316809182987,50.9994036052376,-31.7576803732663,-154.283440634608,101.267439471558,9.98111807741225,63.2684198208153,120.751987276599,112.084084013477,-40.2497000433505,115.996386688203,-97.0774834044278,46.3868192397058,18.0404147878289,32.6691307034343,162.665719650686,-130.348035022616,-98.0877787526697],[11.3611012336332,10.7176390814129,14.2767865059432,15.9402201732155,6.31799388560466,6.9598665041849,10.1387770706788,9.75600986974314,6.24454097007401,13.8269931823015,6.06261725537479,11.9514911866281,5.6887250544969,12.722786962986,5.86161236860789,12.1091489249375,16.6473157645669,8.31269876798615,12.4877287016716,17.8843388694804],null,null,{"interactive":true,"className":"","stroke":true,"color":["c","c","d","e","c","a","b","c","d","e","b","b","b","e","a","e","d","e","b","c"],"weight":5,"opacity":0.5,"fill":true,"fillColor":["c","c","d","e","c","a","b","c","d","e","b","b","b","e","a","e","d","e","b","c"],"fillOpacity":0.2},null,null,null,null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null]},{"method":"addPopups","args":[-29.8280154448003,-111.136349346489,"Random popup",null,null,{"maxWidth":300,"minWidth":50,"autoPan":true,"keepInView":false,"closeButton":true,"className":""}]}],"limits":{"lat":[-56.2407155614346,51.0753118805587],"lng":[-154.283440634608,162.665719650686]}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-a71c99b00fee8420105f" style="width:576px;height:288px;" class="leaflet html-widget"></div>
+<script type="application/json" data-for="htmlwidget-a71c99b00fee8420105f">{"x":{"options":{"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}}},"calls":[{"method":"addTiles","args":["//{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",null,null,{"minZoom":0,"maxZoom":18,"tileSize":256,"subdomains":"abc","errorTileUrl":"","tms":false,"noWrap":false,"zoomOffset":0,"zoomReverse":false,"opacity":1,"zIndex":1,"detectRetina":false,"attribution":"&copy; <a href=\"http://openstreetmap.org\">OpenStreetMap<\/a> contributors, <a href=\"http://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA<\/a>"}]},{"method":"addCircleMarkers","args":[[40.9573576971889,-32.110284101218,-12.2158896457404,32.924009822309,-57.5556857977062,20.2480244636536,23.5037541668862,10.8940597996116,17.7335793245584,-55.7093037106097,39.9369922466576,-42.9541897214949,49.2238099034876,7.50387609936297,17.2993441298604,-16.0653751529753,-48.2948269508779,10.519986525178,-13.8137807697058,-53.610057765618],[27.8436956182122,-125.189326498657,12.5244449079037,34.2258839774877,176.355919819325,-79.6098333131522,74.1887733992189,49.4087141845375,171.965786805376,-168.252185191959,38.6974353622645,37.2929507587105,147.320365849882,37.2788470331579,108.149364022538,-120.674119228497,-24.9240007158369,170.232494724914,-112.313857795671,-77.0001858472824],[5.00429410138167,6.73382841050625,5.67846880061552,5.86802279576659,13.7093311757781,10.2756407181732,17.159748643171,10.2425536687952,8.31260562757961,15.7247590075713,9.41567203728482,18.395000383025,15.4082528466824,14.7509678534698,14.048812747933,10.2044025738724,10.2344217174686,5.7113470043987,6.21156984241679,14.2662374337669],null,null,{"interactive":true,"className":"","stroke":true,"color":["c","a","a","a","a","d","a","e","b","b","c","b","d","b","d","a","a","b","b","c"],"weight":5,"opacity":0.5,"fill":true,"fillColor":["c","a","a","a","a","d","a","e","b","b","c","b","d","b","d","a","a","b","b","c"],"fillOpacity":0.2},null,null,null,null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null]},{"method":"addPopups","args":[-32.110284101218,-125.189326498657,"Random popup",null,null,{"maxWidth":300,"minWidth":50,"autoPan":true,"keepInView":false,"closeButton":true,"className":""}]}],"limits":{"lat":[-57.5556857977062,49.2238099034876],"lng":[-168.252185191959,176.355919819325]}},"evals":[],"jsHooks":[]}</script>
 <p class="caption">
 Map of completely random data
 </p>
@@ -679,7 +693,7 @@ Map of completely random data
 
 // add bootstrap table styles to pandoc tables
 function bootstrapStylePandocTables() {
-  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
 }
 $(document).ready(function () {
   bootstrapStylePandocTables();
