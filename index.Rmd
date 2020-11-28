@@ -1,6 +1,6 @@
 ---
 title: "My Final Project Template"
-author: Your name here
+author: Ting Chang
 subtitle: Subtitle here if desired
 ---
 
@@ -44,30 +44,42 @@ Load any required packages in a code chunk (you may need to install some package
 
 ```{r, message=F, warning=F}
 library(tidyverse)
-library(leaflet)
+library(tidycensus)
 library(kableExtra)
 knitr::opts_chunk$set(cache=TRUE)  # cache the results for quick compiling
 ```
 
 ## Download and clean all required data
-```{r}
-n=20
-data=data.frame(x=runif(n,-180,180),
-                y=runif(n,-60,60),
-                size = runif(n, 5, 20),
-                category = factor(
-                  sample(letters[1:5], n, replace = TRUE)
-                  ),
-                value = rnorm(n))
+```{r, message=F, warning=F}
+v18 <- load_variables(2018, "acs5", cache = TRUE)
 ```
 
-```{r, results='asis'}
-data %>% 
-  slice(1:10) %>% #show only 1:n rows
-  kable(digits=2,align="c")%>% #make table and round to two digits
-  kable_styling(bootstrap_options = 
-                  c("striped", "hover", "condensed", "responsive")) #apply other formatting
+```{r, message=F, warning=F}
+median_income_18 <- get_acs(geography = "block group",
+                            variables = c(medincome = "B19013_001"),
+                            state = "IL",
+                            county = c("Cook", "DuPage"),
+                            year = 2018,
+                            geometry = TRUE)
 ```
+```{r, message=F, warning=F}
+employment_18 <- get_acs(geography = "block group",
+                         variables = c(total_in_labor = "B23025_002", unemployed = "B23025_005"),
+                         state = "IL",
+                         county = c("Cook", "DuPage"),
+                         year = 2018,
+                         geometry = TRUE,
+                         output = "wide")
+```
+
+```{r, message=F, warning=F}
+dataurl = "https://data.cityofchicago.org/resource/ijzp-q8t2.csv?$order=Date DESC&$limit=450000&$offset=30000"
+tdir = tempdir()
+download.file(dataurl, destfile = file.path(tdir, "chicago_crime.csv"))
+
+chicago_crime <- read_csv(paste(tdir,"/chicago_crime.csv", sep = ""))
+```
+
 
 Add any additional processing steps here.
 
@@ -79,20 +91,7 @@ Tables and figures (maps and other graphics) are carefully planned to convey the
 
 Show tables, plots, etc. and describe them.
 
-```{r, fig.width=6, fig.height=3, fig.cap="Map of completely random data"}
-m <- leaflet(data) %>% 
-  addTiles() %>% 
-  addCircleMarkers(~x, ~y, radius = ~size,color = ~as.factor(category)) %>% 
-  addPopups(~x[2], ~y[2], "Random popup")
-m  # a map with the default OSM tile layer
-```
 
-
-```{r}
-data %>% 
-  ggplot(aes(x=x,y=y,col=category))+
-  geom_point()
-```
 
 # Conclusions
 
