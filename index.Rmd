@@ -35,14 +35,11 @@ You can do numbers like this:
 See [http://rmarkdown.rstudio.com/](http://rmarkdown.rstudio.com/) for all the amazing things you can do.
 
 
-Here's my first code chunk.
-```{r}
-1+2
-```
 
-Load any required packages in a code chunk (you may need to install some packages):
 
-```{r, message=F, warning=F}
+Load required packages (you may need to install some packages).
+
+```{r setup, message=F, warning=F, results='hide'}
 library(tidyverse)
 library(tidycensus)
 library(kableExtra)
@@ -50,19 +47,22 @@ knitr::opts_chunk$set(cache=TRUE)  # cache the results for quick compiling
 ```
 
 ## Download and clean all required data
-```{r, message=F, warning=F}
-v18 <- load_variables(2018, "acs5", cache = TRUE)
-```
 
-```{r, message=F, warning=F}
+Download census data from tidycensus.
+
+```{r census, message=F, warning=F, results='hide'}
+# For searching variables from ACS-5yr 2018
+v18 <- load_variables(2018, "acs5", cache = TRUE)
+
+# Downloading median household income data
 median_income_18 <- get_acs(geography = "block group",
                             variables = c(medincome = "B19013_001"),
                             state = "IL",
                             county = c("Cook", "DuPage"),
                             year = 2018,
                             geometry = TRUE)
-```
-```{r, message=F, warning=F}
+
+# Downloading employment data
 employment_18 <- get_acs(geography = "block group",
                          variables = c(total_in_labor = "B23025_002", unemployed = "B23025_005"),
                          state = "IL",
@@ -72,12 +72,58 @@ employment_18 <- get_acs(geography = "block group",
                          output = "wide")
 ```
 
-```{r, message=F, warning=F}
+Download crime report data from Chicago Data Portal (access via SODA API).
+
+```{r crime-report, message=F, warning=F}
+# Downloading crime report via SODA API
 dataurl = "https://data.cityofchicago.org/resource/ijzp-q8t2.csv?$order=Date DESC&$limit=450000&$offset=30000"
 tdir = tempdir()
 download.file(dataurl, destfile = file.path(tdir, "chicago_crime.csv"))
 
 chicago_crime <- read_csv(paste(tdir,"/chicago_crime.csv", sep = ""))
+
+chicago_crime_clean <- chicago_crime %>%
+  mutate(date = as.Date(date, "%Y.%m.%d")) %>%
+  filter(as.Date(date) >= "2019-01-01" & as.Date(date) <= "2020-09-30")
+```
+
+
+```{r}
+location <- c("APARTMENT",
+              "CHA APARTMENT",
+              "CHA HALLWAY / STAIRWELL / ELEVATOR",
+              "CHA HALLWAY/STAIRWELL/ELEVATOR",
+              "CHA PARKING LOT",
+              "CHA PARKING LOT / GROUNDS",
+              "CHA PARKING LOT/GROUNDS",
+              "COACH HOUSE",
+              "DRIVEWAY - RESIDENTIAL",
+              "HOUSE",
+              "NURSING / RETIREMENT HOME",
+              "NURSING HOME/RETIREMENT HOME",
+              "RESIDENCE",
+              "RESIDENCE - GARAGE",
+              "RESIDENCE - PORCH / HALLWAY",
+              "RESIDENCE - YARD (FRONT / BACK)",
+              "RESIDENCE PORCH/HALLWAY",
+              "RESIDENCE-GARAGE",
+              "RESIDENTIAL YARD (FRONT/BACK)")
+
+# Not sure why doesn't work
+# chicago_dv <- chicago_crime_clean %>%
+#   filter(domestic == TRUE & location_description %in% location)
+
+
+# This works
+chicago_dv <- chicago_crime_clean[chicago_crime_clean$location_description %in% location, ] %>%
+  filter(domestic == TRUE)
+```
+
+```{r}
+library(sf)
+
+chicago_cbg <- st_read("data/chicago_cbg.shp")
+
 ```
 
 
