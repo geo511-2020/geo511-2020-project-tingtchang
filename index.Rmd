@@ -84,39 +84,53 @@ chicago_crime <- read_csv(paste(tdir,"/chicago_crime.csv", sep = ""))
 
 chicago_crime_clean <- chicago_crime %>%
   mutate(date = as.Date(date, "%Y.%m.%d")) %>%
-  filter(as.Date(date) >= "2019-01-01" & as.Date(date) <= "2020-09-30")
+  filter(as.Date(date) >= "2018-12-31" & as.Date(date) <= "2020-10-04") %>%
+  select(-block, -iucr, -beat, -district, -ward, -community_area, -year) %>%
+  drop_na(location)
 ```
 
 
 ```{r}
-location <- c("APARTMENT",
-              "CHA APARTMENT",
-              "CHA HALLWAY / STAIRWELL / ELEVATOR",
-              "CHA HALLWAY/STAIRWELL/ELEVATOR",
-              "CHA PARKING LOT",
-              "CHA PARKING LOT / GROUNDS",
-              "CHA PARKING LOT/GROUNDS",
-              "COACH HOUSE",
-              "DRIVEWAY - RESIDENTIAL",
-              "HOUSE",
-              "NURSING / RETIREMENT HOME",
-              "NURSING HOME/RETIREMENT HOME",
-              "RESIDENCE",
-              "RESIDENCE - GARAGE",
-              "RESIDENCE - PORCH / HALLWAY",
-              "RESIDENCE - YARD (FRONT / BACK)",
-              "RESIDENCE PORCH/HALLWAY",
-              "RESIDENCE-GARAGE",
-              "RESIDENTIAL YARD (FRONT/BACK)")
+list_location <- c("APARTMENT",
+                   "CHA APARTMENT",
+                   "CHA HALLWAY / STAIRWELL / ELEVATOR",
+                   "CHA HALLWAY/STAIRWELL/ELEVATOR",
+                   "CHA PARKING LOT",
+                   "CHA PARKING LOT / GROUNDS",
+                   "CHA PARKING LOT/GROUNDS",
+                   "COACH HOUSE",
+                   "DRIVEWAY - RESIDENTIAL",
+                   "HOUSE",
+                   "NURSING / RETIREMENT HOME",
+                   "NURSING HOME/RETIREMENT HOME",
+                   "RESIDENCE",
+                   "RESIDENCE - GARAGE",
+                   "RESIDENCE - PORCH / HALLWAY",
+                   "RESIDENCE - YARD (FRONT / BACK)",
+                   "RESIDENCE PORCH/HALLWAY",
+                   "RESIDENCE-GARAGE",
+                   "RESIDENTIAL YARD (FRONT/BACK)")
 
-# Not sure why doesn't work
-# chicago_dv <- chicago_crime_clean %>%
-#   filter(domestic == TRUE & location_description %in% location)
+chicago_dv <- chicago_crime_clean %>%
+  filter(domestic == TRUE & location_description %in% list_location)
+```
 
+```{r}
+dv_count_week <- chicago_dv %>%
+  group_by(week = cut(date, "week")) %>%
+  tally(name = "dv_count") %>%
+  mutate(week = as.Date(week))
+```
 
-# This works
-chicago_dv <- chicago_crime_clean[chicago_crime_clean$location_description %in% location, ] %>%
-  filter(domestic == TRUE)
+```{r}
+library(ggplot2)
+
+ggplot(data = dv_count_week, aes(x = week, y = dv_count, group = 1)) +
+  geom_line() +
+  geom_point() +
+  scale_x_date(date_labels = "%B") +
+  theme(axis.text.x = element_text(angle=45, hjust = 1))
+
 ```
 
 ```{r}
@@ -126,6 +140,9 @@ chicago_cbg <- st_read("data/chicago_cbg.shp")
 
 ```
 
+```{r}
+
+```
 
 Add any additional processing steps here.
 
