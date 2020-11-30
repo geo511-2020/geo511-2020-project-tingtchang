@@ -43,7 +43,12 @@ Load required packages (you may need to install some packages).
 library(tidyverse)
 library(tidycensus)
 library(kableExtra)
+library(ggplot2)
+library(RColorBrewer)
+
 knitr::opts_chunk$set(cache=TRUE)  # cache the results for quick compiling
+Sys.setenv("LANGUAGE"="En")
+Sys.setlocale("LC_ALL", "English")
 ```
 
 ## Download and clean all required data
@@ -76,7 +81,7 @@ Download crime report data from Chicago Data Portal (access via SODA API).
 
 ```{r crime-report, message=F, warning=F}
 # Downloading crime report via SODA API
-dataurl = "https://data.cityofchicago.org/resource/ijzp-q8t2.csv?$order=Date DESC&$limit=450000&$offset=30000"
+dataurl = "https://data.cityofchicago.org/resource/ijzp-q8t2.csv?$order=Date DESC&$limit=460000&$offset=20000"
 tdir = tempdir()
 download.file(dataurl, destfile = file.path(tdir, "chicago_crime.csv"))
 
@@ -89,8 +94,9 @@ chicago_crime_clean <- chicago_crime %>%
   drop_na(location)
 ```
 
+Process the domestic violence data
 
-```{r}
+```{r dv-process, message=F, warning=F}
 list_location <- c("APARTMENT",
                    "CHA APARTMENT",
                    "CHA HALLWAY / STAIRWELL / ELEVATOR",
@@ -113,34 +119,31 @@ list_location <- c("APARTMENT",
 
 chicago_dv <- chicago_crime_clean %>%
   filter(domestic == TRUE & location_description %in% list_location)
-```
 
-```{r}
 dv_count_week <- chicago_dv %>%
   group_by(week = cut(date, "week")) %>%
   tally(name = "dv_count") %>%
   mutate(week = as.Date(week))
 ```
 
-```{r}
-library(ggplot2)
+Lineplot of domestic violence count
+
+```{r lineplot, message=F, warning=F}
+dv_col <- brewer.pal(8, "Dark2")[2]
 
 ggplot(data = dv_count_week, aes(x = week, y = dv_count, group = 1)) +
-  geom_line() +
-  geom_point() +
-  scale_x_date(date_labels = "%B") +
+  geom_line(color = dv_col, lwd = 0.8, alpha=0.7) +
+  geom_point(color = dv_col, alpha=0.7) +
+  scale_x_date(date_labels = "%b %Y", date_breaks = "1 months") +
+  labs(x = "Month", y = "Count of Domestic Violence") +
+  theme_light() +
   theme(axis.text.x = element_text(angle=45, hjust = 1))
-
 ```
 
 ```{r}
 library(sf)
 
 chicago_cbg <- st_read("data/chicago_cbg.shp")
-
-```
-
-```{r}
 
 ```
 

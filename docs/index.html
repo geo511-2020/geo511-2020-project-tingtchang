@@ -412,7 +412,12 @@ div.tocify {
 <pre class="r"><code>library(tidyverse)
 library(tidycensus)
 library(kableExtra)
-knitr::opts_chunk$set(cache=TRUE)  # cache the results for quick compiling</code></pre>
+library(ggplot2)
+library(RColorBrewer)
+
+knitr::opts_chunk$set(cache=TRUE)  # cache the results for quick compiling
+Sys.setenv(&quot;LANGUAGE&quot;=&quot;En&quot;)
+Sys.setlocale(&quot;LC_ALL&quot;, &quot;English&quot;)</code></pre>
 <div id="download-and-clean-all-required-data" class="section level2">
 <h2>Download and clean all required data</h2>
 <p>Download census data from tidycensus.</p>
@@ -437,7 +442,7 @@ employment_18 &lt;- get_acs(geography = &quot;block group&quot;,
                          output = &quot;wide&quot;)</code></pre>
 <p>Download crime report data from Chicago Data Portal (access via SODA API).</p>
 <pre class="r"><code># Downloading crime report via SODA API
-dataurl = &quot;https://data.cityofchicago.org/resource/ijzp-q8t2.csv?$order=Date DESC&amp;$limit=450000&amp;$offset=30000&quot;
+dataurl = &quot;https://data.cityofchicago.org/resource/ijzp-q8t2.csv?$order=Date DESC&amp;$limit=460000&amp;$offset=20000&quot;
 tdir = tempdir()
 download.file(dataurl, destfile = file.path(tdir, &quot;chicago_crime.csv&quot;))
 
@@ -445,35 +450,48 @@ chicago_crime &lt;- read_csv(paste(tdir,&quot;/chicago_crime.csv&quot;, sep = &q
 
 chicago_crime_clean &lt;- chicago_crime %&gt;%
   mutate(date = as.Date(date, &quot;%Y.%m.%d&quot;)) %&gt;%
-  filter(as.Date(date) &gt;= &quot;2019-01-01&quot; &amp; as.Date(date) &lt;= &quot;2020-09-30&quot;)</code></pre>
-<pre class="r"><code>location &lt;- c(&quot;APARTMENT&quot;,
-              &quot;CHA APARTMENT&quot;,
-              &quot;CHA HALLWAY / STAIRWELL / ELEVATOR&quot;,
-              &quot;CHA HALLWAY/STAIRWELL/ELEVATOR&quot;,
-              &quot;CHA PARKING LOT&quot;,
-              &quot;CHA PARKING LOT / GROUNDS&quot;,
-              &quot;CHA PARKING LOT/GROUNDS&quot;,
-              &quot;COACH HOUSE&quot;,
-              &quot;DRIVEWAY - RESIDENTIAL&quot;,
-              &quot;HOUSE&quot;,
-              &quot;NURSING / RETIREMENT HOME&quot;,
-              &quot;NURSING HOME/RETIREMENT HOME&quot;,
-              &quot;RESIDENCE&quot;,
-              &quot;RESIDENCE - GARAGE&quot;,
-              &quot;RESIDENCE - PORCH / HALLWAY&quot;,
-              &quot;RESIDENCE - YARD (FRONT / BACK)&quot;,
-              &quot;RESIDENCE PORCH/HALLWAY&quot;,
-              &quot;RESIDENCE-GARAGE&quot;,
-              &quot;RESIDENTIAL YARD (FRONT/BACK)&quot;)
+  filter(as.Date(date) &gt;= &quot;2018-12-31&quot; &amp; as.Date(date) &lt;= &quot;2020-10-04&quot;) %&gt;%
+  select(-block, -iucr, -beat, -district, -ward, -community_area, -year) %&gt;%
+  drop_na(location)</code></pre>
+<p>Process the domestic violence data</p>
+<pre class="r"><code>list_location &lt;- c(&quot;APARTMENT&quot;,
+                   &quot;CHA APARTMENT&quot;,
+                   &quot;CHA HALLWAY / STAIRWELL / ELEVATOR&quot;,
+                   &quot;CHA HALLWAY/STAIRWELL/ELEVATOR&quot;,
+                   &quot;CHA PARKING LOT&quot;,
+                   &quot;CHA PARKING LOT / GROUNDS&quot;,
+                   &quot;CHA PARKING LOT/GROUNDS&quot;,
+                   &quot;COACH HOUSE&quot;,
+                   &quot;DRIVEWAY - RESIDENTIAL&quot;,
+                   &quot;HOUSE&quot;,
+                   &quot;NURSING / RETIREMENT HOME&quot;,
+                   &quot;NURSING HOME/RETIREMENT HOME&quot;,
+                   &quot;RESIDENCE&quot;,
+                   &quot;RESIDENCE - GARAGE&quot;,
+                   &quot;RESIDENCE - PORCH / HALLWAY&quot;,
+                   &quot;RESIDENCE - YARD (FRONT / BACK)&quot;,
+                   &quot;RESIDENCE PORCH/HALLWAY&quot;,
+                   &quot;RESIDENCE-GARAGE&quot;,
+                   &quot;RESIDENTIAL YARD (FRONT/BACK)&quot;)
 
-# Not sure why doesn&#39;t work
-# chicago_dv &lt;- chicago_crime_clean %&gt;%
-#   filter(domestic == TRUE &amp; location_description %in% location)
+chicago_dv &lt;- chicago_crime_clean %&gt;%
+  filter(domestic == TRUE &amp; location_description %in% list_location)
 
+dv_count_week &lt;- chicago_dv %&gt;%
+  group_by(week = cut(date, &quot;week&quot;)) %&gt;%
+  tally(name = &quot;dv_count&quot;) %&gt;%
+  mutate(week = as.Date(week))</code></pre>
+<p>Lineplot of domestic violence count</p>
+<pre class="r"><code>dv_col &lt;- brewer.pal(8, &quot;Dark2&quot;)[2]
 
-# This works
-chicago_dv &lt;- chicago_crime_clean[chicago_crime_clean$location_description %in% location, ] %&gt;%
-  filter(domestic == TRUE)</code></pre>
+ggplot(data = dv_count_week, aes(x = week, y = dv_count, group = 1)) +
+  geom_line(color = dv_col, lwd = 0.8, alpha=0.7) +
+  geom_point(color = dv_col, alpha=0.7) +
+  scale_x_date(date_labels = &quot;%b %Y&quot;, date_breaks = &quot;1 months&quot;) +
+  labs(x = &quot;Month&quot;, y = &quot;Count of Domestic Violence&quot;) +
+  theme_light() +
+  theme(axis.text.x = element_text(angle=45, hjust = 1))</code></pre>
+<p><img src="index_files/figure-html/lineplot-1.png" width="672" /></p>
 <pre class="r"><code>library(sf)</code></pre>
 <pre><code>## Linking to GEOS 3.8.0, GDAL 3.0.4, PROJ 6.3.1</code></pre>
 <pre class="r"><code>chicago_cbg &lt;- st_read(&quot;data/chicago_cbg.shp&quot;)</code></pre>
