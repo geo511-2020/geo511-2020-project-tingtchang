@@ -1,6 +1,6 @@
 ---
 title: "My Final Project Template"
-author: Your name here
+author: Ting Chang
 subtitle: Subtitle here if desired
 ---
 
@@ -35,38 +35,168 @@ You can do numbers like this:
 See [http://rmarkdown.rstudio.com/](http://rmarkdown.rstudio.com/) for all the amazing things you can do.
 
 
-Here's my first code chunk.
-```{r}
-1+2
-```
 
-Load any required packages in a code chunk (you may need to install some packages):
 
-```{r, message=F, warning=F}
+Load required packages (you may need to install some packages).
+
+```{r setup, message=F, warning=F, results='hide'}
 library(tidyverse)
-library(leaflet)
+library(tidycensus)
 library(kableExtra)
+library(ggplot2)
+library(sf)
+library(RColorBrewer)
+
 knitr::opts_chunk$set(cache=TRUE)  # cache the results for quick compiling
+Sys.setenv("LANGUAGE"="En")
+Sys.setlocale("LC_ALL", "English")
 ```
 
 ## Download and clean all required data
+
+Load chicago's census block group shapefile from data folder
+
 ```{r}
-n=20
-data=data.frame(x=runif(n,-180,180),
-                y=runif(n,-60,60),
-                size = runif(n, 5, 20),
-                category = factor(
-                  sample(letters[1:5], n, replace = TRUE)
-                  ),
-                value = rnorm(n))
+chicago_cbg <- st_read("data/chicago_cbg.shp") %>%
+  select(CensusBloc)
+
 ```
 
-```{r, results='asis'}
-data %>% 
-  slice(1:10) %>% #show only 1:n rows
-  kable(digits=2,align="c")%>% #make table and round to two digits
-  kable_styling(bootstrap_options = 
-                  c("striped", "hover", "condensed", "responsive")) #apply other formatting
+Download census data from tidycensus.
+
+```{r census, message=F, warning=F, results='hide'}
+# For searching variables from ACS-5yr 2018
+v18 <- load_variables(2018, "acs5", cache = TRUE)
+
+# Downloading population data
+population_18 <- get_acs(geography = "block group",
+                         variables = c(population = "B01003_001"),
+                         state = "IL",
+                         county = c("Cook", "DuPage"),
+                         year = 2018)
+
+# Downloading median household income data
+median_income_18 <- get_acs(geography = "block group",
+                            variables = c(medincome = "B19013_001"),
+                            state = "IL",
+                            county = c("Cook", "DuPage"),
+                            year = 2018)
+
+# Downloading employment data
+employment_18 <- get_acs(geography = "block group",
+                         variables = c(total_in_labor = "B23025_002", unemployed = "B23025_005"),
+                         state = "IL",
+                         county = c("Cook", "DuPage"),
+                         year = 2018,
+                         output = "wide")
+
+# Crop census data to the City of Chicago
+population_18 <- left_join(chicago_cbg, population_18, by = c("CensusBloc" = "GEOID")) %>%
+  select(CensusBloc, population = estimate)
+
+median_income_18 <- left_join(chicago_cbg, median_income_18, by = c("CensusBloc" = "GEOID")) %>%
+  select(CensusBloc, median_income = estimate)
+
+employment_18 <- left_join(chicago_cbg, employment_18, by = c("CensusBloc" = "GEOID")) %>%
+  select(CensusBloc, total_in_labor = total_in_laborE, unemployed = unemployedE) %>%
+  mutate(unemployment_rate = unemployed/total_in_labor)
+```
+
+Download crime report data from Chicago Data Portal (access via SODA API).
+
+```{r crime-report, message=F, warning=F}
+# Downloading crime report via SODA API
+dataurl = "https://data.cityofchicago.org/resource/ijzp-q8t2.csv?$order=Date DESC&$limit=460000&$offset=20000"
+tdir = tempdir()
+download.file(dataurl, destfile = file.path(tdir, "chicago_crime.csv"))
+
+chicago_crime <- read_csv(paste(tdir,"/chicago_crime.csv", sep = ""))
+
+chicago_crime_clean <- chicago_crime %>%
+  mutate(date = as.Date(date, "%Y.%m.%d")) %>%
+  filter(as.Date(date) >= "2018-12-31" & as.Date(date) <= "2020-10-04") %>%
+  select(-block, -iucr, -beat, -district, -ward, -community_area, -year, -location) %>%
+  drop_na(location)
+```
+
+Process the domestic violence data
+
+```{r dv-process, message=F, warning=F}
+list_location <- c("APARTMENT",
+                   "CHA APARTMENT",
+                   "CHA HALLWAY / STAIRWELL / ELEVATOR",
+                   "CHA HALLWAY/STAIRWELL/ELEVATOR",
+                   "CHA PARKING LOT",
+                   "CHA PARKING LOT / GROUNDS",
+                   "CHA PARKING LOT/GROUNDS",
+                   "COACH HOUSE",
+                   "DRIVEWAY - RESIDENTIAL",
+                   "HOUSE",
+                   "NURSING / RETIREMENT HOME",
+                   "NURSING HOME/RETIREMENT HOME",
+                   "RESIDENCE",
+                   "RESIDENCE - GARAGE",
+                   "RESIDENCE - PORCH / HALLWAY",
+                   "RESIDENCE - YARD (FRONT / BACK)",
+                   "RESIDENCE PORCH/HALLWAY",
+                   "RESIDENCE-GARAGE",
+                   "RESIDENTIAL YARD (FRONT/BACK)")
+
+list_crime_type <- c("ARSON",
+                     "ASSAULT",
+                     "BATTERY",
+                     "BURGLARY",
+                     "CRIM SEXUAL ASSAULT",
+                     "CRIMINAL SEXUAL ASSAULT",
+                     "DOMESTIC VIOLENCE",
+                     "HOMICIDE",
+                     "INTIMIDATION",
+                     "KIDNAPPING",
+                     "OBSCENITY",
+                     "OFFENSE INVOLVING CHILDREN",
+                     "OTHER OFFENSE",
+                     "SEX OFFENSE",
+                     "STALKING")
+
+chicago_dv <- chicago_crime_clean %>%
+  filter(domestic == TRUE & location_description %in% list_location & primary_type %in% list_crime_type)
+
+dv_count_week <- chicago_dv %>%
+  group_by(week = cut(date, "week")) %>%
+  tally(name = "dv_count") %>%
+  mutate(week = as.Date(week))
+```
+
+```{r}
+chicago_dv <- st_as_sf(chicago_dv, coords = c("longitude", "latitude"), crs = st_crs(chicago_cbg))
+
+chicago_cbg_dv <- st_join(chicago_dv, chicago_cbg) %>%
+  st_set_geometry(NULL)
+```
+```{r}
+cbg_dv_march19 <- chicago_cbg_dv %>%
+  filter(date >= "2019-03-01" & date <= "2019-03-31") %>%
+  group_by(CensusBloc) %>%
+  tally(name = "dv_count") 
+
+cbg_dv_april19 <- chicago_cbg_dv %>%
+  filter(date >= "2019-04-01" & date <= "2019-04-30") %>%
+  group_by(CensusBloc) %>%
+  tally(name = "dv_count")
+
+cbg_dv_march20 <- chicago_cbg_dv %>%
+  filter(date >= "2020-03-01" & date <= "2020-03-31") %>%
+  group_by(CensusBloc) %>%
+  tally(name = "dv_count")
+
+cbg_dv_april20 <- chicago_cbg_dv %>%
+  filter(date >= "2020-04-01" & date <= "2020-04-30") %>%
+  group_by(CensusBloc) %>%
+  tally(name = "dv_count")
+```
+
+```{r}
+test_join <- right_join(cbg_dv_march19, chicago_cbg)
 ```
 
 Add any additional processing steps here.
@@ -79,19 +209,19 @@ Tables and figures (maps and other graphics) are carefully planned to convey the
 
 Show tables, plots, etc. and describe them.
 
-```{r, fig.width=6, fig.height=3, fig.cap="Map of completely random data"}
-m <- leaflet(data) %>% 
-  addTiles() %>% 
-  addCircleMarkers(~x, ~y, radius = ~size,color = ~as.factor(category)) %>% 
-  addPopups(~x[2], ~y[2], "Random popup")
-m  # a map with the default OSM tile layer
-```
 
+Lineplot of domestic violence count
 
-```{r}
-data %>% 
-  ggplot(aes(x=x,y=y,col=category))+
-  geom_point()
+```{r lineplot, message=F, warning=F}
+dv_col <- brewer.pal(8, "Dark2")[2]
+
+ggplot(data = dv_count_week, aes(x = week, y = dv_count, group = 1)) +
+  geom_line(color = dv_col, lwd = 0.8, alpha=0.7) +
+  geom_point(color = dv_col, alpha=0.7) +
+  scale_x_date(date_labels = "%b %Y", date_breaks = "1 months") +
+  labs(x = "Month", y = "Count of Domestic Violence") +
+  theme_light() +
+  theme(axis.text.x = element_text(angle=45, hjust = 1))
 ```
 
 # Conclusions

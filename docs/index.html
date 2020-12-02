@@ -9,14 +9,15 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Your name here" />
+<meta name="author" content="Ting Chang" />
 
 
 <title>My Final Project Template</title>
 
-<script src="site_libs/jquery-1.12.4/jquery.min.js"></script>
+<script src="site_libs/header-attrs-2.4.6/header-attrs.js"></script>
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<link href="site_libs/bootstrap-3.3.5/css/simplex.min.css" rel="stylesheet" />
+<link href="site_libs/bootstrap-3.3.5/css/lumen.min.css" rel="stylesheet" />
 <script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
 <script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
 <script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
@@ -26,15 +27,18 @@
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
-<script src="site_libs/kePrint-0.0.1/kePrint.js"></script>
-<script src="site_libs/htmlwidgets-1.5.1/htmlwidgets.js"></script>
-<link href="site_libs/leaflet-1.3.1/leaflet.css" rel="stylesheet" />
-<script src="site_libs/leaflet-1.3.1/leaflet.js"></script>
-<link href="site_libs/leafletfix-1.0.0/leafletfix.css" rel="stylesheet" />
-<script src="site_libs/Proj4Leaflet-1.0.1/proj4-compressed.js"></script>
-<script src="site_libs/Proj4Leaflet-1.0.1/proj4leaflet.js"></script>
-<link href="site_libs/rstudio_leaflet-1.3.1/rstudio_leaflet.css" rel="stylesheet" />
-<script src="site_libs/leaflet-binding-2.0.3/leaflet.js"></script>
+<link href="site_libs/anchor-sections-1.0/anchor-sections.css" rel="stylesheet" />
+<script src="site_libs/anchor-sections-1.0/anchor-sections.js"></script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+      .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
 
 <style type="text/css">code{white-space: pre;}</style>
 <style type="text/css">
@@ -116,33 +120,33 @@ summary {
 <style type="text/css">
 /* padding for bootstrap navbar */
 body {
-  padding-top: 41px;
+  padding-top: 54px;
   padding-bottom: 40px;
 }
 /* offset scroll position for anchor links (for fixed navbar)  */
 .section h1 {
-  padding-top: 46px;
-  margin-top: -46px;
+  padding-top: 59px;
+  margin-top: -59px;
 }
 .section h2 {
-  padding-top: 46px;
-  margin-top: -46px;
+  padding-top: 59px;
+  margin-top: -59px;
 }
 .section h3 {
-  padding-top: 46px;
-  margin-top: -46px;
+  padding-top: 59px;
+  margin-top: -59px;
 }
 .section h4 {
-  padding-top: 46px;
-  margin-top: -46px;
+  padding-top: 59px;
+  margin-top: -59px;
 }
 .section h5 {
-  padding-top: 46px;
-  margin-top: -46px;
+  padding-top: 59px;
+  margin-top: -59px;
 }
 .section h6 {
-  padding-top: 46px;
-  margin-top: -46px;
+  padding-top: 59px;
+  margin-top: -59px;
 }
 .dropdown-submenu {
   position: relative;
@@ -346,7 +350,7 @@ div.tocify {
 
 
 
-<div class="navbar navbar-inverse  navbar-fixed-top" role="navigation">
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
   <div class="container">
     <div class="navbar-header">
       <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
@@ -375,7 +379,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">My Final Project Template</h1>
 <h3 class="subtitle">Subtitle here if desired</h3>
-<h4 class="author">Your name here</h4>
+<h4 class="author">Ting Chang</h4>
 
 </div>
 
@@ -404,222 +408,100 @@ div.tocify {
 <li>The third most important thing</li>
 </ol>
 <p>See <a href="http://rmarkdown.rstudio.com/">http://rmarkdown.rstudio.com/</a> for all the amazing things you can do.</p>
-<p>Here’s my first code chunk.</p>
-<pre class="r"><code>1+2</code></pre>
-<pre><code>## [1] 3</code></pre>
-<p>Load any required packages in a code chunk (you may need to install some packages):</p>
+<p>Load required packages (you may need to install some packages).</p>
 <pre class="r"><code>library(tidyverse)
-library(leaflet)
+library(tidycensus)
 library(kableExtra)
-knitr::opts_chunk$set(cache=TRUE)  # cache the results for quick compiling</code></pre>
+library(ggplot2)
+library(RColorBrewer)
+
+knitr::opts_chunk$set(cache=TRUE)  # cache the results for quick compiling
+Sys.setenv(&quot;LANGUAGE&quot;=&quot;En&quot;)
+Sys.setlocale(&quot;LC_ALL&quot;, &quot;English&quot;)</code></pre>
 <div id="download-and-clean-all-required-data" class="section level2">
 <h2>Download and clean all required data</h2>
-<pre class="r"><code>n=20
-data=data.frame(x=runif(n,-180,180),
-                y=runif(n,-60,60),
-                size = runif(n, 5, 20),
-                category = factor(
-                  sample(letters[1:5], n, replace = TRUE)
-                  ),
-                value = rnorm(n))</code></pre>
-<pre class="r"><code>data %&gt;% 
-  slice(1:10) %&gt;% #show only 1:n rows
-  kable(digits=2,align=&quot;c&quot;)%&gt;% #make table and round to two digits
-  kable_styling(bootstrap_options = 
-                  c(&quot;striped&quot;, &quot;hover&quot;, &quot;condensed&quot;, &quot;responsive&quot;)) #apply other formatting</code></pre>
-<table class="table table-striped table-hover table-condensed table-responsive" style="margin-left: auto; margin-right: auto;">
-<thead>
-<tr>
-<th style="text-align:center;">
-x
-</th>
-<th style="text-align:center;">
-y
-</th>
-<th style="text-align:center;">
-size
-</th>
-<th style="text-align:center;">
-category
-</th>
-<th style="text-align:center;">
-value
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center;">
--107.26
-</td>
-<td style="text-align:center;">
-9.30
-</td>
-<td style="text-align:center;">
-11.36
-</td>
-<td style="text-align:center;">
-c
-</td>
-<td style="text-align:center;">
--1.77
-</td>
-</tr>
-<tr>
-<td style="text-align:center;">
--111.14
-</td>
-<td style="text-align:center;">
--29.83
-</td>
-<td style="text-align:center;">
-10.72
-</td>
-<td style="text-align:center;">
-c
-</td>
-<td style="text-align:center;">
--0.11
-</td>
-</tr>
-<tr>
-<td style="text-align:center;">
-110.32
-</td>
-<td style="text-align:center;">
--31.88
-</td>
-<td style="text-align:center;">
-14.28
-</td>
-<td style="text-align:center;">
-d
-</td>
-<td style="text-align:center;">
-0.70
-</td>
-</tr>
-<tr>
-<td style="text-align:center;">
-51.00
-</td>
-<td style="text-align:center;">
--4.69
-</td>
-<td style="text-align:center;">
-15.94
-</td>
-<td style="text-align:center;">
-e
-</td>
-<td style="text-align:center;">
-0.11
-</td>
-</tr>
-<tr>
-<td style="text-align:center;">
--31.76
-</td>
-<td style="text-align:center;">
-12.75
-</td>
-<td style="text-align:center;">
-6.32
-</td>
-<td style="text-align:center;">
-c
-</td>
-<td style="text-align:center;">
--1.18
-</td>
-</tr>
-<tr>
-<td style="text-align:center;">
--154.28
-</td>
-<td style="text-align:center;">
--40.69
-</td>
-<td style="text-align:center;">
-6.96
-</td>
-<td style="text-align:center;">
-a
-</td>
-<td style="text-align:center;">
-0.48
-</td>
-</tr>
-<tr>
-<td style="text-align:center;">
-101.27
-</td>
-<td style="text-align:center;">
--41.97
-</td>
-<td style="text-align:center;">
-10.14
-</td>
-<td style="text-align:center;">
-b
-</td>
-<td style="text-align:center;">
--0.59
-</td>
-</tr>
-<tr>
-<td style="text-align:center;">
-9.98
-</td>
-<td style="text-align:center;">
--16.61
-</td>
-<td style="text-align:center;">
-9.76
-</td>
-<td style="text-align:center;">
-c
-</td>
-<td style="text-align:center;">
--0.83
-</td>
-</tr>
-<tr>
-<td style="text-align:center;">
-63.27
-</td>
-<td style="text-align:center;">
--39.94
-</td>
-<td style="text-align:center;">
-6.24
-</td>
-<td style="text-align:center;">
-d
-</td>
-<td style="text-align:center;">
--1.88
-</td>
-</tr>
-<tr>
-<td style="text-align:center;">
-120.75
-</td>
-<td style="text-align:center;">
-6.98
-</td>
-<td style="text-align:center;">
-13.83
-</td>
-<td style="text-align:center;">
-e
-</td>
-<td style="text-align:center;">
--0.95
-</td>
-</tr>
-</tbody>
-</table>
+<p>Download census data from tidycensus.</p>
+<pre class="r"><code># For searching variables from ACS-5yr 2018
+v18 &lt;- load_variables(2018, &quot;acs5&quot;, cache = TRUE)
+
+# Downloading median household income data
+median_income_18 &lt;- get_acs(geography = &quot;block group&quot;,
+                            variables = c(medincome = &quot;B19013_001&quot;),
+                            state = &quot;IL&quot;,
+                            county = c(&quot;Cook&quot;, &quot;DuPage&quot;),
+                            year = 2018,
+                            geometry = TRUE)
+
+# Downloading employment data
+employment_18 &lt;- get_acs(geography = &quot;block group&quot;,
+                         variables = c(total_in_labor = &quot;B23025_002&quot;, unemployed = &quot;B23025_005&quot;),
+                         state = &quot;IL&quot;,
+                         county = c(&quot;Cook&quot;, &quot;DuPage&quot;),
+                         year = 2018,
+                         geometry = TRUE,
+                         output = &quot;wide&quot;)</code></pre>
+<p>Download crime report data from Chicago Data Portal (access via SODA API).</p>
+<pre class="r"><code># Downloading crime report via SODA API
+dataurl = &quot;https://data.cityofchicago.org/resource/ijzp-q8t2.csv?$order=Date DESC&amp;$limit=460000&amp;$offset=20000&quot;
+tdir = tempdir()
+download.file(dataurl, destfile = file.path(tdir, &quot;chicago_crime.csv&quot;))
+
+chicago_crime &lt;- read_csv(paste(tdir,&quot;/chicago_crime.csv&quot;, sep = &quot;&quot;))
+
+chicago_crime_clean &lt;- chicago_crime %&gt;%
+  mutate(date = as.Date(date, &quot;%Y.%m.%d&quot;)) %&gt;%
+  filter(as.Date(date) &gt;= &quot;2018-12-31&quot; &amp; as.Date(date) &lt;= &quot;2020-10-04&quot;) %&gt;%
+  select(-block, -iucr, -beat, -district, -ward, -community_area, -year) %&gt;%
+  drop_na(location)</code></pre>
+<p>Process the domestic violence data</p>
+<pre class="r"><code>list_location &lt;- c(&quot;APARTMENT&quot;,
+                   &quot;CHA APARTMENT&quot;,
+                   &quot;CHA HALLWAY / STAIRWELL / ELEVATOR&quot;,
+                   &quot;CHA HALLWAY/STAIRWELL/ELEVATOR&quot;,
+                   &quot;CHA PARKING LOT&quot;,
+                   &quot;CHA PARKING LOT / GROUNDS&quot;,
+                   &quot;CHA PARKING LOT/GROUNDS&quot;,
+                   &quot;COACH HOUSE&quot;,
+                   &quot;DRIVEWAY - RESIDENTIAL&quot;,
+                   &quot;HOUSE&quot;,
+                   &quot;NURSING / RETIREMENT HOME&quot;,
+                   &quot;NURSING HOME/RETIREMENT HOME&quot;,
+                   &quot;RESIDENCE&quot;,
+                   &quot;RESIDENCE - GARAGE&quot;,
+                   &quot;RESIDENCE - PORCH / HALLWAY&quot;,
+                   &quot;RESIDENCE - YARD (FRONT / BACK)&quot;,
+                   &quot;RESIDENCE PORCH/HALLWAY&quot;,
+                   &quot;RESIDENCE-GARAGE&quot;,
+                   &quot;RESIDENTIAL YARD (FRONT/BACK)&quot;)
+
+chicago_dv &lt;- chicago_crime_clean %&gt;%
+  filter(domestic == TRUE &amp; location_description %in% list_location)
+
+dv_count_week &lt;- chicago_dv %&gt;%
+  group_by(week = cut(date, &quot;week&quot;)) %&gt;%
+  tally(name = &quot;dv_count&quot;) %&gt;%
+  mutate(week = as.Date(week))</code></pre>
+<p>Lineplot of domestic violence count</p>
+<pre class="r"><code>dv_col &lt;- brewer.pal(8, &quot;Dark2&quot;)[2]
+
+ggplot(data = dv_count_week, aes(x = week, y = dv_count, group = 1)) +
+  geom_line(color = dv_col, lwd = 0.8, alpha=0.7) +
+  geom_point(color = dv_col, alpha=0.7) +
+  scale_x_date(date_labels = &quot;%b %Y&quot;, date_breaks = &quot;1 months&quot;) +
+  labs(x = &quot;Month&quot;, y = &quot;Count of Domestic Violence&quot;) +
+  theme_light() +
+  theme(axis.text.x = element_text(angle=45, hjust = 1))</code></pre>
+<p><img src="index_files/figure-html/lineplot-1.png" width="672" /></p>
+<pre class="r"><code>library(sf)</code></pre>
+<pre><code>## Linking to GEOS 3.8.0, GDAL 3.0.4, PROJ 6.3.1</code></pre>
+<pre class="r"><code>chicago_cbg &lt;- st_read(&quot;data/chicago_cbg.shp&quot;)</code></pre>
+<pre><code>## Reading layer `chicago_cbg&#39; from data source `D:\Users\Ting\Documents\R\geo511-2020-project-tingtchang\data\chicago_cbg.shp&#39; using driver `ESRI Shapefile&#39;
+## Simple feature collection with 2184 features and 8 fields
+## geometry type:  POLYGON
+## dimension:      XYZ
+## bbox:           xmin: -87.95924 ymin: 41.64429 xmax: -87.52366 ymax: 42.02314
+## z_range:        zmin: 0 zmax: 0
+## geographic CRS: WGS 84</code></pre>
 <p>Add any additional processing steps here.</p>
 </div>
 </div>
@@ -628,22 +510,6 @@ e
 <p>[~200 words]</p>
 <p>Tables and figures (maps and other graphics) are carefully planned to convey the results of your analysis. Intense exploration and evidence of many trials and failures. The author looked at the data in many different ways before coming to the final presentation of the data.</p>
 <p>Show tables, plots, etc. and describe them.</p>
-<pre class="r"><code>m &lt;- leaflet(data) %&gt;% 
-  addTiles() %&gt;% 
-  addCircleMarkers(~x, ~y, radius = ~size,color = ~as.factor(category)) %&gt;% 
-  addPopups(~x[2], ~y[2], &quot;Random popup&quot;)
-m  # a map with the default OSM tile layer</code></pre>
-<div class="figure">
-<div id="htmlwidget-30fe21b4c0b9f4d96b62" style="width:576px;height:288px;" class="leaflet html-widget"></div>
-<script type="application/json" data-for="htmlwidget-30fe21b4c0b9f4d96b62">{"x":{"options":{"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}}},"calls":[{"method":"addTiles","args":["//{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",null,null,{"minZoom":0,"maxZoom":18,"tileSize":256,"subdomains":"abc","errorTileUrl":"","tms":false,"noWrap":false,"zoomOffset":0,"zoomReverse":false,"opacity":1,"zIndex":1,"detectRetina":false,"attribution":"&copy; <a href=\"http://openstreetmap.org\">OpenStreetMap<\/a> contributors, <a href=\"http://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA<\/a>"}]},{"method":"addCircleMarkers","args":[[9.30170754902065,-29.8280154448003,-31.8831084296107,-4.68705408275127,12.7471503429115,-40.6861814763397,-41.9714264106005,-16.6061587259173,-39.9376808758825,6.97950504720211,-56.0505143646151,28.2724470645189,7.67273761332035,-56.2407155614346,-18.906586188823,-5.07408133707941,51.0753118805587,26.2375680729747,-17.2111759800464,-46.0531650390476],[-107.258561421186,-111.136349346489,110.316809182987,50.9994036052376,-31.7576803732663,-154.283440634608,101.267439471558,9.98111807741225,63.2684198208153,120.751987276599,112.084084013477,-40.2497000433505,115.996386688203,-97.0774834044278,46.3868192397058,18.0404147878289,32.6691307034343,162.665719650686,-130.348035022616,-98.0877787526697],[11.3611012336332,10.7176390814129,14.2767865059432,15.9402201732155,6.31799388560466,6.9598665041849,10.1387770706788,9.75600986974314,6.24454097007401,13.8269931823015,6.06261725537479,11.9514911866281,5.6887250544969,12.722786962986,5.86161236860789,12.1091489249375,16.6473157645669,8.31269876798615,12.4877287016716,17.8843388694804],null,null,{"interactive":true,"className":"","stroke":true,"color":["c","c","d","e","c","a","b","c","d","e","b","b","b","e","a","e","d","e","b","c"],"weight":5,"opacity":0.5,"fill":true,"fillColor":["c","c","d","e","c","a","b","c","d","e","b","b","b","e","a","e","d","e","b","c"],"fillOpacity":0.2},null,null,null,null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null]},{"method":"addPopups","args":[-29.8280154448003,-111.136349346489,"Random popup",null,null,{"maxWidth":300,"minWidth":50,"autoPan":true,"keepInView":false,"closeButton":true,"className":""}]}],"limits":{"lat":[-56.2407155614346,51.0753118805587],"lng":[-154.283440634608,162.665719650686]}},"evals":[],"jsHooks":[]}</script>
-<p class="caption">
-Map of completely random data
-</p>
-</div>
-<pre class="r"><code>data %&gt;% 
-  ggplot(aes(x=x,y=y,col=category))+
-  geom_point()</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
 </div>
 <div id="conclusions" class="section level1">
 <h1>Conclusions</h1>
@@ -679,7 +545,7 @@ Map of completely random data
 
 // add bootstrap table styles to pandoc tables
 function bootstrapStylePandocTables() {
-  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
 }
 $(document).ready(function () {
   bootstrapStylePandocTables();
