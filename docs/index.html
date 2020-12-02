@@ -413,24 +413,44 @@ div.tocify {
 library(tidycensus)
 library(kableExtra)
 library(ggplot2)
+library(sf)
 library(RColorBrewer)
+library(viridis)
+library(gridExtra)
 
 knitr::opts_chunk$set(cache=TRUE)  # cache the results for quick compiling
 Sys.setenv(&quot;LANGUAGE&quot;=&quot;En&quot;)
 Sys.setlocale(&quot;LC_ALL&quot;, &quot;English&quot;)</code></pre>
 <div id="download-and-clean-all-required-data" class="section level2">
 <h2>Download and clean all required data</h2>
+<p>Load chicago’s census block group shapefile from data folder</p>
+<pre class="r"><code># Load chicago CBG shapefile in R
+chicago_cbg &lt;- st_read(&quot;data/chicago_cbg.shp&quot;) %&gt;%
+  select(CensusBloc)</code></pre>
+<pre><code>## Reading layer `chicago_cbg&#39; from data source `D:\Users\Ting\Documents\R\geo511-2020-project-tingtchang\data\chicago_cbg.shp&#39; using driver `ESRI Shapefile&#39;
+## Simple feature collection with 2184 features and 8 fields
+## geometry type:  POLYGON
+## dimension:      XYZ
+## bbox:           xmin: -87.95924 ymin: 41.64429 xmax: -87.52366 ymax: 42.02314
+## z_range:        zmin: 0 zmax: 0
+## geographic CRS: WGS 84</code></pre>
 <p>Download census data from tidycensus.</p>
 <pre class="r"><code># For searching variables from ACS-5yr 2018
 v18 &lt;- load_variables(2018, &quot;acs5&quot;, cache = TRUE)
+
+# Downloading population data
+population_18 &lt;- get_acs(geography = &quot;block group&quot;,
+                         variables = c(population = &quot;B01003_001&quot;),
+                         state = &quot;IL&quot;,
+                         county = c(&quot;Cook&quot;, &quot;DuPage&quot;),
+                         year = 2018)
 
 # Downloading median household income data
 median_income_18 &lt;- get_acs(geography = &quot;block group&quot;,
                             variables = c(medincome = &quot;B19013_001&quot;),
                             state = &quot;IL&quot;,
                             county = c(&quot;Cook&quot;, &quot;DuPage&quot;),
-                            year = 2018,
-                            geometry = TRUE)
+                            year = 2018)
 
 # Downloading employment data
 employment_18 &lt;- get_acs(geography = &quot;block group&quot;,
@@ -438,8 +458,18 @@ employment_18 &lt;- get_acs(geography = &quot;block group&quot;,
                          state = &quot;IL&quot;,
                          county = c(&quot;Cook&quot;, &quot;DuPage&quot;),
                          year = 2018,
-                         geometry = TRUE,
-                         output = &quot;wide&quot;)</code></pre>
+                         output = &quot;wide&quot;)
+
+# Crop census data to the City of Chicago
+population_18 &lt;- left_join(chicago_cbg, population_18, by = c(&quot;CensusBloc&quot; = &quot;GEOID&quot;)) %&gt;%
+  select(CensusBloc, population = estimate)
+
+median_income_18 &lt;- left_join(chicago_cbg, median_income_18, by = c(&quot;CensusBloc&quot; = &quot;GEOID&quot;)) %&gt;%
+  select(CensusBloc, median_income = estimate)
+
+employment_18 &lt;- left_join(chicago_cbg, employment_18, by = c(&quot;CensusBloc&quot; = &quot;GEOID&quot;)) %&gt;%
+  select(CensusBloc, total_in_labor = total_in_laborE, unemployed = unemployedE) %&gt;%
+  mutate(unemployment_rate = unemployed/total_in_labor)</code></pre>
 <p>Download crime report data from Chicago Data Portal (access via SODA API).</p>
 <pre class="r"><code># Downloading crime report via SODA API
 dataurl = &quot;https://data.cityofchicago.org/resource/ijzp-q8t2.csv?$order=Date DESC&amp;$limit=460000&amp;$offset=20000&quot;
@@ -451,8 +481,8 @@ chicago_crime &lt;- read_csv(paste(tdir,&quot;/chicago_crime.csv&quot;, sep = &q
 chicago_crime_clean &lt;- chicago_crime %&gt;%
   mutate(date = as.Date(date, &quot;%Y.%m.%d&quot;)) %&gt;%
   filter(as.Date(date) &gt;= &quot;2018-12-31&quot; &amp; as.Date(date) &lt;= &quot;2020-10-04&quot;) %&gt;%
-  select(-block, -iucr, -beat, -district, -ward, -community_area, -year) %&gt;%
-  drop_na(location)</code></pre>
+  select(-block, -iucr, -beat, -district, -ward, -community_area, -year, -location) %&gt;%
+  drop_na(latitude, longitude)</code></pre>
 <p>Process the domestic violence data</p>
 <pre class="r"><code>list_location &lt;- c(&quot;APARTMENT&quot;,
                    &quot;CHA APARTMENT&quot;,
@@ -474,13 +504,123 @@ chicago_crime_clean &lt;- chicago_crime %&gt;%
                    &quot;RESIDENCE-GARAGE&quot;,
                    &quot;RESIDENTIAL YARD (FRONT/BACK)&quot;)
 
-chicago_dv &lt;- chicago_crime_clean %&gt;%
-  filter(domestic == TRUE &amp; location_description %in% list_location)
+list_crime_type &lt;- c(&quot;ARSON&quot;,
+                     &quot;ASSAULT&quot;,
+                     &quot;BATTERY&quot;,
+                     &quot;BURGLARY&quot;,
+                     &quot;CRIM SEXUAL ASSAULT&quot;,
+                     &quot;CRIMINAL SEXUAL ASSAULT&quot;,
+                     &quot;DOMESTIC VIOLENCE&quot;,
+                     &quot;HOMICIDE&quot;,
+                     &quot;INTIMIDATION&quot;,
+                     &quot;KIDNAPPING&quot;,
+                     &quot;OBSCENITY&quot;,
+                     &quot;OFFENSE INVOLVING CHILDREN&quot;,
+                     &quot;OTHER OFFENSE&quot;,
+                     &quot;SEX OFFENSE&quot;,
+                     &quot;STALKING&quot;)
 
-dv_count_week &lt;- chicago_dv %&gt;%
+chicago_dv &lt;- chicago_crime_clean %&gt;%
+  filter(domestic == TRUE &amp; location_description %in% list_location &amp; primary_type %in% list_crime_type)</code></pre>
+<pre class="r"><code>dv_count_week &lt;- chicago_dv %&gt;%
   group_by(week = cut(date, &quot;week&quot;)) %&gt;%
   tally(name = &quot;dv_count&quot;) %&gt;%
-  mutate(week = as.Date(week))</code></pre>
+  mutate(week = as.Date(week))
+
+# Aggregate by week learned from:
+# https://stackoverflow.com/questions/40554231/dplyr-lubridate-how-to-aggregate-a-dataframe-by-week/40554522
+# Count observations learned from official document:
+# https://dplyr.tidyverse.org/reference/tally.html</code></pre>
+<pre class="r"><code>chicago_dv &lt;- st_as_sf(chicago_dv, coords = c(&quot;longitude&quot;, &quot;latitude&quot;), crs = st_crs(chicago_cbg))
+
+chicago_cbg_dv &lt;- st_join(chicago_dv, chicago_cbg) %&gt;%
+  st_set_geometry(NULL)</code></pre>
+<pre><code>## although coordinates are longitude/latitude, st_intersects assumes that they are planar
+## although coordinates are longitude/latitude, st_intersects assumes that they are planar</code></pre>
+<pre class="r"><code>cbg_dv_march19 &lt;- chicago_cbg_dv %&gt;%
+  filter(date &gt;= &quot;2019-03-01&quot; &amp; date &lt;= &quot;2019-03-31&quot;) %&gt;%
+  group_by(CensusBloc) %&gt;%
+  tally(name = &quot;dv_count&quot;) %&gt;%
+  right_join(population_18, by = &quot;CensusBloc&quot;) %&gt;%
+  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population)
+
+cbg_dv_april19 &lt;- chicago_cbg_dv %&gt;%
+  filter(date &gt;= &quot;2019-04-01&quot; &amp; date &lt;= &quot;2019-04-30&quot;) %&gt;%
+  group_by(CensusBloc) %&gt;%
+  tally(name = &quot;dv_count&quot;) %&gt;%
+  right_join(population_18, by = &quot;CensusBloc&quot;) %&gt;%
+  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population)
+
+cbg_dv_march20 &lt;- chicago_cbg_dv %&gt;%
+  filter(date &gt;= &quot;2020-03-01&quot; &amp; date &lt;= &quot;2020-03-31&quot;) %&gt;%
+  group_by(CensusBloc) %&gt;%
+  tally(name = &quot;dv_count&quot;) %&gt;%
+  right_join(population_18, by = &quot;CensusBloc&quot;) %&gt;%
+  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population)
+
+cbg_dv_april20 &lt;- chicago_cbg_dv %&gt;%
+  filter(date &gt;= &quot;2020-04-01&quot; &amp; date &lt;= &quot;2020-04-30&quot;) %&gt;%
+  group_by(CensusBloc) %&gt;%
+  tally(name = &quot;dv_count&quot;) %&gt;%
+  right_join(population_18, by = &quot;CensusBloc&quot;) %&gt;%
+  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population)
+
+# replace_na learned from the official document:
+# https://dplyr.tidyverse.org/reference/tally.html</code></pre>
+<pre class="r"><code>map_dv_march19 &lt;- ggplot(data=cbg_dv_march19, aes(geometry=geometry)) +
+  geom_sf(aes(fill = dv_rate)) +
+  scale_fill_viridis(option=&quot;inferno&quot;, direction = -1) +
+  theme_minimal() +
+  theme(legend.position = &#39;bottom&#39;) +
+  # theme(axis.line = element_blank(), axis.text = element_blank(),
+  #       axis.ticks = element_blank(), axis.title = element_blank()) +
+  labs(title = &quot;Domestic violence rate in March 2019&quot;,
+       fill = &quot;Domestic violence rate&quot;)
+
+map_dv_april19 &lt;- ggplot(data=cbg_dv_april19, aes(geometry=geometry)) +
+  geom_sf(aes(fill = dv_rate)) +
+  scale_fill_viridis(option=&quot;inferno&quot;, direction = -1) +
+  theme_minimal() +
+  theme(legend.position = &#39;bottom&#39;) +
+  # theme(axis.line = element_blank(), axis.text = element_blank(),
+  #       axis.ticks = element_blank(), axis.title = element_blank()) +
+  labs(title = &quot;Domestic violence rate in April 2019&quot;,
+       fill = &quot;Domestic violence rate&quot;)
+
+map_dv_march20 &lt;- ggplot(data=cbg_dv_march20, aes(geometry=geometry)) +
+  geom_sf(aes(fill = dv_rate)) +
+  scale_fill_viridis(option=&quot;inferno&quot;, direction = -1) +
+  theme_minimal() +
+  theme(legend.position = &#39;bottom&#39;) +
+  # theme(axis.line = element_blank(), axis.text = element_blank(),
+  #       axis.ticks = element_blank(), axis.title = element_blank()) +
+  labs(title = &quot;Domestic violence rate in March 2020&quot;,
+       fill = &quot;Domestic violence rate&quot;)
+
+map_dv_april20 &lt;- ggplot(data=cbg_dv_april20, aes(geometry=geometry)) +
+  geom_sf(aes(fill = dv_rate)) +
+  scale_fill_viridis(option=&quot;inferno&quot;, direction = -1) +
+  theme_minimal() +
+  theme(legend.position = &#39;bottom&#39;) +
+  # theme(axis.line = element_blank(), axis.text = element_blank(),
+  #       axis.ticks = element_blank(), axis.title = element_blank()) +
+  labs(title = &quot;Domestic violence rate in April 2020&quot;,
+       fill = &quot;Domestic violence rate&quot;)
+
+grid.arrange(map_dv_march19, map_dv_march20,
+             map_dv_april19, map_dv_april20,
+             nrow = 2, ncol = 2)</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-5-1.png" width="5000" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># Reverse color palette:
+# https://stackoverflow.com/questions/45868625/how-to-reverse-the-default-color-palette-for-ggplot2</code></pre>
+<p>Add any additional processing steps here.</p>
+</div>
+</div>
+<div id="results" class="section level1">
+<h1>Results</h1>
+<p>[~200 words]</p>
+<p>Tables and figures (maps and other graphics) are carefully planned to convey the results of your analysis. Intense exploration and evidence of many trials and failures. The author looked at the data in many different ways before coming to the final presentation of the data.</p>
+<p>Show tables, plots, etc. and describe them.</p>
 <p>Lineplot of domestic violence count</p>
 <pre class="r"><code>dv_col &lt;- brewer.pal(8, &quot;Dark2&quot;)[2]
 
@@ -492,24 +632,6 @@ ggplot(data = dv_count_week, aes(x = week, y = dv_count, group = 1)) +
   theme_light() +
   theme(axis.text.x = element_text(angle=45, hjust = 1))</code></pre>
 <p><img src="index_files/figure-html/lineplot-1.png" width="672" /></p>
-<pre class="r"><code>library(sf)</code></pre>
-<pre><code>## Linking to GEOS 3.8.0, GDAL 3.0.4, PROJ 6.3.1</code></pre>
-<pre class="r"><code>chicago_cbg &lt;- st_read(&quot;data/chicago_cbg.shp&quot;)</code></pre>
-<pre><code>## Reading layer `chicago_cbg&#39; from data source `D:\Users\Ting\Documents\R\geo511-2020-project-tingtchang\data\chicago_cbg.shp&#39; using driver `ESRI Shapefile&#39;
-## Simple feature collection with 2184 features and 8 fields
-## geometry type:  POLYGON
-## dimension:      XYZ
-## bbox:           xmin: -87.95924 ymin: 41.64429 xmax: -87.52366 ymax: 42.02314
-## z_range:        zmin: 0 zmax: 0
-## geographic CRS: WGS 84</code></pre>
-<p>Add any additional processing steps here.</p>
-</div>
-</div>
-<div id="results" class="section level1">
-<h1>Results</h1>
-<p>[~200 words]</p>
-<p>Tables and figures (maps and other graphics) are carefully planned to convey the results of your analysis. Intense exploration and evidence of many trials and failures. The author looked at the data in many different ways before coming to the final presentation of the data.</p>
-<p>Show tables, plots, etc. and describe them.</p>
 </div>
 <div id="conclusions" class="section level1">
 <h1>Conclusions</h1>

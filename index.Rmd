@@ -47,6 +47,7 @@ library(ggplot2)
 library(sf)
 library(RColorBrewer)
 library(viridis)
+library(gridExtra)
 
 knitr::opts_chunk$set(cache=TRUE)  # cache the results for quick compiling
 Sys.setenv("LANGUAGE"="En")
@@ -189,9 +190,6 @@ cbg_dv_march19 <- chicago_cbg_dv %>%
   right_join(population_18, by = "CensusBloc") %>%
   mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population)
 
-# replace_na learned from the official document:
-# https://dplyr.tidyverse.org/reference/tally.html
-
 cbg_dv_april19 <- chicago_cbg_dv %>%
   filter(date >= "2019-04-01" & date <= "2019-04-30") %>%
   group_by(CensusBloc) %>%
@@ -202,30 +200,65 @@ cbg_dv_april19 <- chicago_cbg_dv %>%
 cbg_dv_march20 <- chicago_cbg_dv %>%
   filter(date >= "2020-03-01" & date <= "2020-03-31") %>%
   group_by(CensusBloc) %>%
-  tally(name = "dv_count")
+  tally(name = "dv_count") %>%
+  right_join(population_18, by = "CensusBloc") %>%
+  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population)
 
 cbg_dv_april20 <- chicago_cbg_dv %>%
   filter(date >= "2020-04-01" & date <= "2020-04-30") %>%
   group_by(CensusBloc) %>%
-  tally(name = "dv_count")
+  tally(name = "dv_count") %>%
+  right_join(population_18, by = "CensusBloc") %>%
+  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population)
+
+# replace_na learned from the official document:
+# https://dplyr.tidyverse.org/reference/tally.html
 ```
 
-```{r}
-ggplot(data=cbg_dv_march19, aes(geometry=geometry)) +
+```{r, fig.width=10, fig.height=10, fig.align='center', dpi=500}
+map_dv_march19 <- ggplot(data=cbg_dv_march19, aes(geometry=geometry)) +
   geom_sf(aes(fill = dv_rate)) +
+  scale_fill_viridis(option="inferno", direction = -1) +
   theme_minimal() +
-  ggtitle("DV rate by census block group in March 2019") +
+  theme(legend.position = 'bottom') +
   # theme(axis.line = element_blank(), axis.text = element_blank(),
   #       axis.ticks = element_blank(), axis.title = element_blank()) +
-  scale_fill_viridis(option="inferno", direction = -1)
+  labs(title = "Domestic violence rate in March 2019",
+       fill = "Domestic violence rate")
 
-ggplot(data=cbg_dv_april19, aes(geometry=geometry)) +
+map_dv_april19 <- ggplot(data=cbg_dv_april19, aes(geometry=geometry)) +
   geom_sf(aes(fill = dv_rate)) +
+  scale_fill_viridis(option="inferno", direction = -1) +
   theme_minimal() +
-  ggtitle("DV rate by census block group in April 2019") +
-  theme(axis.line = element_blank(), axis.text = element_blank(),
-        axis.ticks = element_blank(), axis.title = element_blank()) +
-  scale_fill_viridis(option="inferno", direction = -1)
+  theme(legend.position = 'bottom') +
+  # theme(axis.line = element_blank(), axis.text = element_blank(),
+  #       axis.ticks = element_blank(), axis.title = element_blank()) +
+  labs(title = "Domestic violence rate in April 2019",
+       fill = "Domestic violence rate")
+
+map_dv_march20 <- ggplot(data=cbg_dv_march20, aes(geometry=geometry)) +
+  geom_sf(aes(fill = dv_rate)) +
+  scale_fill_viridis(option="inferno", direction = -1) +
+  theme_minimal() +
+  theme(legend.position = 'bottom') +
+  # theme(axis.line = element_blank(), axis.text = element_blank(),
+  #       axis.ticks = element_blank(), axis.title = element_blank()) +
+  labs(title = "Domestic violence rate in March 2020",
+       fill = "Domestic violence rate")
+
+map_dv_april20 <- ggplot(data=cbg_dv_april20, aes(geometry=geometry)) +
+  geom_sf(aes(fill = dv_rate)) +
+  scale_fill_viridis(option="inferno", direction = -1) +
+  theme_minimal() +
+  theme(legend.position = 'bottom') +
+  # theme(axis.line = element_blank(), axis.text = element_blank(),
+  #       axis.ticks = element_blank(), axis.title = element_blank()) +
+  labs(title = "Domestic violence rate in April 2020",
+       fill = "Domestic violence rate")
+
+grid.arrange(map_dv_march19, map_dv_march20,
+             map_dv_april19, map_dv_april20,
+             nrow = 2, ncol = 2)
 
 # Reverse color palette:
 # https://stackoverflow.com/questions/45868625/how-to-reverse-the-default-color-palette-for-ggplot2
