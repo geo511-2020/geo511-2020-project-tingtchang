@@ -417,6 +417,7 @@ library(sf)
 library(RColorBrewer)
 library(viridis)
 library(gridExtra)
+library(classInt)
 
 knitr::opts_chunk$set(cache=TRUE)  # cache the results for quick compiling
 Sys.setenv(&quot;LANGUAGE&quot;=&quot;En&quot;)
@@ -567,52 +568,6 @@ cbg_dv_april20 &lt;- chicago_cbg_dv %&gt;%
 
 # replace_na learned from the official document:
 # https://dplyr.tidyverse.org/reference/tally.html</code></pre>
-<pre class="r"><code>map_dv_march19 &lt;- ggplot(data=cbg_dv_march19, aes(geometry=geometry)) +
-  geom_sf(aes(fill = dv_rate)) +
-  scale_fill_viridis(option=&quot;inferno&quot;, direction = -1) +
-  theme_minimal() +
-  theme(legend.position = &#39;bottom&#39;) +
-  # theme(axis.line = element_blank(), axis.text = element_blank(),
-  #       axis.ticks = element_blank(), axis.title = element_blank()) +
-  labs(title = &quot;Domestic violence rate in March 2019&quot;,
-       fill = &quot;Domestic violence rate&quot;)
-
-map_dv_april19 &lt;- ggplot(data=cbg_dv_april19, aes(geometry=geometry)) +
-  geom_sf(aes(fill = dv_rate)) +
-  scale_fill_viridis(option=&quot;inferno&quot;, direction = -1) +
-  theme_minimal() +
-  theme(legend.position = &#39;bottom&#39;) +
-  # theme(axis.line = element_blank(), axis.text = element_blank(),
-  #       axis.ticks = element_blank(), axis.title = element_blank()) +
-  labs(title = &quot;Domestic violence rate in April 2019&quot;,
-       fill = &quot;Domestic violence rate&quot;)
-
-map_dv_march20 &lt;- ggplot(data=cbg_dv_march20, aes(geometry=geometry)) +
-  geom_sf(aes(fill = dv_rate)) +
-  scale_fill_viridis(option=&quot;inferno&quot;, direction = -1) +
-  theme_minimal() +
-  theme(legend.position = &#39;bottom&#39;) +
-  # theme(axis.line = element_blank(), axis.text = element_blank(),
-  #       axis.ticks = element_blank(), axis.title = element_blank()) +
-  labs(title = &quot;Domestic violence rate in March 2020&quot;,
-       fill = &quot;Domestic violence rate&quot;)
-
-map_dv_april20 &lt;- ggplot(data=cbg_dv_april20, aes(geometry=geometry)) +
-  geom_sf(aes(fill = dv_rate)) +
-  scale_fill_viridis(option=&quot;inferno&quot;, direction = -1) +
-  theme_minimal() +
-  theme(legend.position = &#39;bottom&#39;) +
-  # theme(axis.line = element_blank(), axis.text = element_blank(),
-  #       axis.ticks = element_blank(), axis.title = element_blank()) +
-  labs(title = &quot;Domestic violence rate in April 2020&quot;,
-       fill = &quot;Domestic violence rate&quot;)
-
-grid.arrange(map_dv_march19, map_dv_march20,
-             map_dv_april19, map_dv_april20,
-             nrow = 2, ncol = 2)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-5-1.png" width="5000" style="display: block; margin: auto;" /></p>
-<pre class="r"><code># Reverse color palette:
-# https://stackoverflow.com/questions/45868625/how-to-reverse-the-default-color-palette-for-ggplot2</code></pre>
 <p>Add any additional processing steps here.</p>
 </div>
 </div>
@@ -632,6 +587,55 @@ ggplot(data = dv_count_week, aes(x = week, y = dv_count, group = 1)) +
   theme_light() +
   theme(axis.text.x = element_text(angle=45, hjust = 1))</code></pre>
 <p><img src="index_files/figure-html/lineplot-1.png" width="672" /></p>
+<pre class="r"><code>map_dv_march19 &lt;- ggplot(data=cbg_dv_march19, aes(geometry=geometry)) +
+  geom_sf(aes(fill = dv_rate), lwd=0.3) +
+  scale_fill_viridis(option=&quot;viridis&quot;, direction = -1) +
+  theme_minimal() +
+  # theme(legend.position = &#39;bottom&#39;) +
+  # theme(axis.line = element_blank(), axis.text = element_blank(),
+  #       axis.ticks = element_blank(), axis.title = element_blank()) +
+  labs(title = &quot;Domestic violence rate in March 2019&quot;,
+       fill = &quot;Domestic violence rate&quot;)
+
+map_dv_april19 &lt;- ggplot(data=cbg_dv_april19, aes(geometry=geometry)) +
+  geom_sf(aes(fill = dv_rate), lwd=0.3) +
+  scale_fill_viridis(option=&quot;magma&quot;, direction = -1) +
+  theme_minimal() +
+  # theme(legend.position = &#39;bottom&#39;) +
+  # theme(axis.line = element_blank(), axis.text = element_blank(),
+  #       axis.ticks = element_blank(), axis.title = element_blank()) +
+  labs(title = &quot;Domestic violence rate in April 2019&quot;,
+       fill = &quot;Domestic violence rate&quot;)
+
+map_dv_march20 &lt;- ggplot(data=cbg_dv_march20, aes(geometry=geometry)) +
+  geom_sf(aes(fill = dv_rate), lwd=0.3) +
+  scale_fill_viridis(option=&quot;plasma&quot;, direction = -1) +
+  theme_minimal() +
+  # theme(legend.position = &#39;bottom&#39;) +
+  # theme(axis.line = element_blank(), axis.text = element_blank(),
+  #       axis.ticks = element_blank(), axis.title = element_blank()) +
+  labs(title = &quot;Domestic violence rate in March 2020&quot;,
+       fill = &quot;Domestic violence rate&quot;)
+
+map_dv_april20 &lt;- ggplot(data=cbg_dv_april20, aes(geometry=geometry)) +
+  geom_sf(aes(fill = dv_rate), lwd=0.3) +
+  scale_fill_viridis(option=&quot;inferno&quot;, direction = -1) +
+  theme_minimal() +
+  # theme(legend.position = &#39;bottom&#39;) +
+  # theme(axis.line = element_blank(), axis.text = element_blank(),
+  #       axis.ticks = element_blank(), axis.title = element_blank()) +
+  labs(title = &quot;Domestic violence rate in April 2020&quot;,
+       fill = &quot;Domestic violence rate&quot;)
+
+print(map_dv_march19)
+print(map_dv_april19)
+print(map_dv_march20)
+print(map_dv_april20)
+
+
+# Reverse color palette:
+# https://stackoverflow.com/questions/45868625/how-to-reverse-the-default-color-palette-for-ggplot2</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-5-1.png" width="3500" style="display: block; margin: auto;" /><img src="index_files/figure-html/unnamed-chunk-5-2.png" width="3500" style="display: block; margin: auto;" /><img src="index_files/figure-html/unnamed-chunk-5-3.png" width="3500" style="display: block; margin: auto;" /><img src="index_files/figure-html/unnamed-chunk-5-4.png" width="3500" style="display: block; margin: auto;" /></p>
 </div>
 <div id="conclusions" class="section level1">
 <h1>Conclusions</h1>
