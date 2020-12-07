@@ -10,9 +10,7 @@ subtitle: "Before and After the COVID-19 Lockdown"
 
 Clearly stated background and questions / hypotheses / problems being addressed. Sets up the analysis in an interesting and compelling way.
 
-The surgering cases of COVID-19 in Spring 2020 has caused many government around the world to impose lockdown policy in order to slow down the spread of pandemic. However, researchers have the concerns that while people spending more time at home, another crisis might araise, domestic violence.
-
-This project aims to observe the spatial and temporal variation of the domestic violence in Chicago City, IL using the crime report data. How does DV reports change before and after lockdown. the spatial and temporal distribution of dv in Chicago city. 
+ 
 
 # Materials and methods
 
