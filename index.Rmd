@@ -1,7 +1,7 @@
 ---
-title: "My Final Project Template"
+title: "Reported Domestic Violence in Chicago City, IL"
 author: Ting Chang
-subtitle: Subtitle here if desired
+subtitle: "Before and After the COVID-19 Lockdown"
 ---
 
 # Introduction
@@ -9,6 +9,10 @@ subtitle: Subtitle here if desired
 [~ 200 words]
 
 Clearly stated background and questions / hypotheses / problems being addressed. Sets up the analysis in an interesting and compelling way.
+
+The surgering cases of COVID-19 in Spring 2020 has caused many government around the world to impose lockdown policy in order to slow down the spread of pandemic. However, researchers have the concerns that while people spending more time at home, another crisis might araise, domestic violence.
+
+This project aims to observe the spatial and temporal variation of the domestic violence in Chicago City, IL using the crime report data. How does DV reports change before and after lockdown. the spatial and temporal distribution of dv in Chicago city. 
 
 # Materials and methods
 
@@ -59,7 +63,7 @@ Sys.setlocale("LC_ALL", "English")
 
 Load chicago's census block group shapefile from data folder
 
-```{r}
+```{r shapefile, message=F, warning=F, results='hide'}
 # Load chicago CBG shapefile in R
 chicago_cbg <- st_read("data/chicago_cbg.shp") %>%
   select(CensusBloc)
@@ -107,7 +111,7 @@ employment_18 <- left_join(chicago_cbg, employment_18, by = c("CensusBloc" = "GE
 
 Download crime report data from Chicago Data Portal (access via SODA API).
 
-```{r crime-report, message=F, warning=F}
+```{r crime-report, message=F, warning=F, results='hide'}
 # Downloading crime report via SODA API
 dataurl = "https://data.cityofchicago.org/resource/ijzp-q8t2.csv?$order=Date DESC&$limit=460000&$offset=20000"
 tdir = tempdir()
@@ -124,7 +128,7 @@ chicago_crime_clean <- chicago_crime %>%
 
 Process the domestic violence data
 
-```{r dv-process, message=F, warning=F}
+```{r dv-process, message=F, warning=F, results='hide'}
 list_location <- c("APARTMENT",
                    "CHA APARTMENT",
                    "CHA HALLWAY / STAIRWELL / ELEVATOR",
@@ -165,7 +169,7 @@ chicago_dv <- chicago_crime_clean %>%
   filter(domestic == TRUE & location_description %in% list_location & primary_type %in% list_crime_type)
 ```
 
-```{r}
+```{r, message=F, warning=F, results='hide'}
 dv_count_week <- chicago_dv %>%
   group_by(week = cut(date, "week")) %>%
   tally(name = "dv_count") %>%
@@ -177,44 +181,64 @@ dv_count_week <- chicago_dv %>%
 # https://dplyr.tidyverse.org/reference/tally.html
 ```
 
-```{r}
+```{r, message=F, warning=F, results='hide'}
 chicago_dv <- st_as_sf(chicago_dv, coords = c("longitude", "latitude"), crs = st_crs(chicago_cbg))
 
 chicago_cbg_dv <- st_join(chicago_dv, chicago_cbg) %>%
   st_set_geometry(NULL)
 ```
 
-```{r}
+```{r, message=F, warning=F, results='hide'}
 cbg_dv_march19 <- chicago_cbg_dv %>%
   filter(date >= "2019-03-01" & date <= "2019-03-31") %>%
   group_by(CensusBloc) %>%
   tally(name = "dv_count") %>%
   right_join(population_18, by = "CensusBloc") %>%
-  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population)
+  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population) %>%
+  st_as_sf(crs=st_crs(chicago_cbg))
 
 cbg_dv_april19 <- chicago_cbg_dv %>%
   filter(date >= "2019-04-01" & date <= "2019-04-30") %>%
   group_by(CensusBloc) %>%
   tally(name = "dv_count") %>%
   right_join(population_18, by = "CensusBloc") %>%
-  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population)
+  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population) %>%
+  st_as_sf(crs=st_crs(chicago_cbg))
 
 cbg_dv_march20 <- chicago_cbg_dv %>%
   filter(date >= "2020-03-01" & date <= "2020-03-31") %>%
   group_by(CensusBloc) %>%
   tally(name = "dv_count") %>%
   right_join(population_18, by = "CensusBloc") %>%
-  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population)
+  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population) %>%
+  st_as_sf(crs=st_crs(chicago_cbg))
 
 cbg_dv_april20 <- chicago_cbg_dv %>%
   filter(date >= "2020-04-01" & date <= "2020-04-30") %>%
   group_by(CensusBloc) %>%
   tally(name = "dv_count") %>%
   right_join(population_18, by = "CensusBloc") %>%
-  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population)
+  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population) %>%
+  st_as_sf(crs=st_crs(chicago_cbg))
 
 # replace_na learned from the official document:
 # https://dplyr.tidyverse.org/reference/tally.html
+```
+
+```{r classint, eval=F, echo=F}
+# # ClassInt package could convert continuous variable to categoriacal
+# 
+# # Having issue: when using "jenks" style, the breakets are forced to be right-closed, if need to include the minimum value, in my case zero, need to use, e.g., min(variable)-0.001.
+# 
+# # Also need to research on how to change the legend, the current method to plot out choropleth map, the legend is pretty messy.
+# 
+# dv_breaks <- classIntervals(c(0,cbg_dv_march20$dv_rate), n=6, style = "jenks")
+# dv_breaks <- classIntervals(cbg_dv_march20$dv_rate, n=6, style = "fixed",
+#                             fixedBreaks=c(0,0.000555,0.001862,0.003807,0.007212,0.015038,0.025271))
+# 
+# cbg_dv_march20 <- mutate(cbg_dv_march20, dv_rate_cat = cut(dv_rate, dv_breaks$brks))
+# 
+# # https://cengel.github.io/R-spatial/mapping.html
 ```
 
 Add any additional processing steps here.
@@ -230,82 +254,98 @@ Show tables, plots, etc. and describe them.
 
 Lineplot of domestic violence count
 
-```{r lineplot, message=F, warning=F}
+```{r lineplot, message=F, warning=F, fig.align='center', fig.width=10, fig.height=5}
 dv_col <- brewer.pal(8, "Dark2")[2]
 
 ggplot(data = dv_count_week, aes(x = week, y = dv_count, group = 1)) +
   geom_line(color = dv_col, lwd = 0.8, alpha=0.7) +
   geom_point(color = dv_col, alpha=0.7) +
   scale_x_date(date_labels = "%b %Y", date_breaks = "1 months") +
-  labs(x = "Month", y = "Count of Domestic Violence") +
+  labs(title="Reported Domestic Violence Over Time", x = "Month", y = "Count of Domestic Violence") +
   theme_light() +
   theme(axis.text.x = element_text(angle=45, hjust = 1))
 ```
 
-```{r, fig.show='hold', fig.align='center', dpi=500}
-map_dv_march19 <- ggplot(data=cbg_dv_march19, aes(geometry=geometry)) +
+```{r, fig.show='hold', fig.align='center', fig.width=12, fig.height=15, dpi=500}
+map_dv_march19 <- ggplot(data=cbg_dv_march19) +
   geom_sf(aes(fill = dv_rate), lwd=0.3) +
   scale_fill_viridis(option="magma", direction = -1) +
   theme_minimal() +
-  # theme(legend.position = 'bottom') +
-  # theme(axis.line = element_blank(), axis.text = element_blank(),
-  #       axis.ticks = element_blank(), axis.title = element_blank()) +
+  theme(legend.position = 'bottom') +
   labs(title = "Domestic violence rate in March 2019",
        fill = "Domestic violence rate")
 
-map_dv_april19 <- ggplot(data=cbg_dv_april19, aes(geometry=geometry)) +
+map_dv_april19 <- ggplot(data=cbg_dv_april19) +
   geom_sf(aes(fill = dv_rate), lwd=0.3) +
   scale_fill_viridis(option="magma", direction = -1) +
   theme_minimal() +
-  # theme(legend.position = 'bottom') +
-  # theme(axis.line = element_blank(), axis.text = element_blank(),
-  #       axis.ticks = element_blank(), axis.title = element_blank()) +
+  theme(legend.position = 'bottom') +
   labs(title = "Domestic violence rate in April 2019",
        fill = "Domestic violence rate")
 
-map_dv_march20 <- ggplot(data=cbg_dv_march20, aes(geometry=geometry)) +
+map_dv_march20 <- ggplot(data=cbg_dv_march20) +
   geom_sf(aes(fill = dv_rate), lwd=0.3) +
   scale_fill_viridis(option="magma", direction = -1) +
   theme_minimal() +
-  # theme(legend.position = 'bottom') +
-  # theme(axis.line = element_blank(), axis.text = element_blank(),
-  #       axis.ticks = element_blank(), axis.title = element_blank()) +
+  theme(legend.position = 'bottom') +
   labs(title = "Domestic violence rate in March 2020",
        fill = "Domestic violence rate")
 
-map_dv_april20 <- ggplot(data=cbg_dv_april20, aes(geometry=geometry)) +
+map_dv_april20 <- ggplot(data=cbg_dv_april20) +
   geom_sf(aes(fill = dv_rate), lwd=0.3) +
   scale_fill_viridis(option="magma", direction = -1) +
   theme_minimal() +
-  # theme(legend.position = 'bottom') +
-  # theme(axis.line = element_blank(), axis.text = element_blank(),
-  #       axis.ticks = element_blank(), axis.title = element_blank()) +
+  theme(legend.position = 'bottom') +
   labs(title = "Domestic violence rate in April 2020",
        fill = "Domestic violence rate")
 
-print(map_dv_march19)
-print(map_dv_april19)
-print(map_dv_march20)
-print(map_dv_april20)
-
+grid.arrange(map_dv_march19, map_dv_march20, map_dv_april19, map_dv_april20, nrow=2, ncol=2)
 
 # Reverse color palette:
 # https://stackoverflow.com/questions/45868625/how-to-reverse-the-default-color-palette-for-ggplot2
+# grid.arrange refers to:
+# https://cran.r-project.org/web/packages/egg/vignettes/Ecosystem.html
 ```
-```{r classint, eval=F, echo=F}
-# # ClassInt package could convert continuous variable to categoriacal
-# 
-# # Having issue: when using "jenks" style, the breakets are forced to be right-closed, if need to include the minimum value, in my case zero, need to use, e.g., min(variable)-0.001.
-# 
-# # Also need to research on how to change the legend, the current method to plot out choropleth map, the legend is pretty messy.
-# 
-# dv_breaks <- classIntervals(c(0,cbg_dv_march20$dv_rate), n=6, style = "jenks")
-# dv_breaks <- classIntervals(cbg_dv_march20$dv_rate, n=6, style = "fixed",
-#                             fixedBreaks=c(0,0.000555,0.001862,0.003807,0.007212,0.015038,0.025271))
-# 
-# cbg_dv_march20 <- mutate(cbg_dv_march20, dv_rate_cat = cut(dv_rate, dv_breaks$brks))
-# 
-# # https://cengel.github.io/R-spatial/mapping.html
+
+```{r, message=F, warning=F, fig.align='center', fig.width=12, fig.height=6}
+median_col <- brewer.pal(8, "Pastel2")[1]
+
+hist_median18 <- ggplot(data = median_income_18, aes(x=median_income)) +
+  geom_histogram(fill=median_col, col="grey50", binwidth = 10000) +
+  theme_classic() +
+  labs(title = "Histogram of Median Household Income", x="Median Household Income", y="Count")
+
+map_median18 <- ggplot(data=median_income_18) +
+  geom_sf(aes(fill = median_income), lwd=0.3) +
+  scale_fill_viridis(option="viridis", direction = -1) +
+  theme_minimal() +
+  theme(axis.line = element_blank(), axis.text = element_blank(),
+        axis.ticks = element_blank(), axis.title = element_blank()) +
+  labs(title = "Median Household Income in 2018",
+       fill = "Median household\nincome")
+# make sure the NA CBGs
+
+grid.arrange(map_median18, hist_median18, ncol=2, widths=2:1)
+```
+
+```{r, message=F, warning=F, fig.align='center', fig.width=12, fig.height=6}
+unemployed_col <- brewer.pal(8, "Pastel2")[2]
+
+hist_unemployed18 <- ggplot(data = employment_18, aes(x=unemployment_rate)) +
+  geom_histogram(fill=unemployed_col, col="grey50", binwidth = 0.04) +
+  theme_classic() +
+  labs(title = "Histogram of Unemployment Rate", x="Unemployment Rate", y="Count")
+
+map_unemployed18 <- ggplot(data=employment_18) +
+  geom_sf(aes(fill = unemployment_rate), lwd=0.3) +
+  scale_fill_viridis(option="viridis", direction = -1) +
+  theme_minimal() +
+  theme(axis.line = element_blank(), axis.text = element_blank(),
+        axis.ticks = element_blank(), axis.title = element_blank()) +
+  labs(title = "Unemployment Rate in 2018",
+       fill = "Unemployment rate")
+
+grid.arrange(map_unemployed18, hist_unemployed18, ncol=2, widths=2:1)
 ```
 
 

@@ -12,7 +12,7 @@
 <meta name="author" content="Ting Chang" />
 
 
-<title>My Final Project Template</title>
+<title>Reported Domestic Violence in Chicago City, IL</title>
 
 <script src="site_libs/header-attrs-2.4.6/header-attrs.js"></script>
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
@@ -377,8 +377,8 @@ div.tocify {
 
 
 
-<h1 class="title toc-ignore">My Final Project Template</h1>
-<h3 class="subtitle">Subtitle here if desired</h3>
+<h1 class="title toc-ignore">Reported Domestic Violence in Chicago City, IL</h1>
+<h3 class="subtitle">Before and After the COVID-19 Lockdown</h3>
 <h4 class="author">Ting Chang</h4>
 
 </div>
@@ -388,6 +388,8 @@ div.tocify {
 <h1>Introduction</h1>
 <p>[~ 200 words]</p>
 <p>Clearly stated background and questions / hypotheses / problems being addressed. Sets up the analysis in an interesting and compelling way.</p>
+<p>The surgering cases of COVID-19 in Spring 2020 has caused many government around the world to impose lockdown policy in order to slow down the spread of pandemic. However, researchers have the concerns that while people spending more time at home, another crisis might araise, domestic violence.</p>
+<p>This project aims to observe the spatial and temporal variation of the domestic violence in Chicago City, IL using the crime report data. How does DV reports change before and after lockdown. the spatial and temporal distribution of dv in Chicago city.</p>
 </div>
 <div id="materials-and-methods" class="section level1">
 <h1>Materials and methods</h1>
@@ -428,13 +430,6 @@ Sys.setlocale(&quot;LC_ALL&quot;, &quot;English&quot;)</code></pre>
 <pre class="r"><code># Load chicago CBG shapefile in R
 chicago_cbg &lt;- st_read(&quot;data/chicago_cbg.shp&quot;) %&gt;%
   select(CensusBloc)</code></pre>
-<pre><code>## Reading layer `chicago_cbg&#39; from data source `D:\Users\Ting\Documents\R\geo511-2020-project-tingtchang\data\chicago_cbg.shp&#39; using driver `ESRI Shapefile&#39;
-## Simple feature collection with 2184 features and 8 fields
-## geometry type:  POLYGON
-## dimension:      XYZ
-## bbox:           xmin: -87.95924 ymin: 41.64429 xmax: -87.52366 ymax: 42.02314
-## z_range:        zmin: 0 zmax: 0
-## geographic CRS: WGS 84</code></pre>
 <p>Download census data from tidycensus.</p>
 <pre class="r"><code># For searching variables from ACS-5yr 2018
 v18 &lt;- load_variables(2018, &quot;acs5&quot;, cache = TRUE)
@@ -536,35 +531,37 @@ chicago_dv &lt;- chicago_crime_clean %&gt;%
 
 chicago_cbg_dv &lt;- st_join(chicago_dv, chicago_cbg) %&gt;%
   st_set_geometry(NULL)</code></pre>
-<pre><code>## although coordinates are longitude/latitude, st_intersects assumes that they are planar
-## although coordinates are longitude/latitude, st_intersects assumes that they are planar</code></pre>
 <pre class="r"><code>cbg_dv_march19 &lt;- chicago_cbg_dv %&gt;%
   filter(date &gt;= &quot;2019-03-01&quot; &amp; date &lt;= &quot;2019-03-31&quot;) %&gt;%
   group_by(CensusBloc) %&gt;%
   tally(name = &quot;dv_count&quot;) %&gt;%
   right_join(population_18, by = &quot;CensusBloc&quot;) %&gt;%
-  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population)
+  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population) %&gt;%
+  st_as_sf(crs=st_crs(chicago_cbg))
 
 cbg_dv_april19 &lt;- chicago_cbg_dv %&gt;%
   filter(date &gt;= &quot;2019-04-01&quot; &amp; date &lt;= &quot;2019-04-30&quot;) %&gt;%
   group_by(CensusBloc) %&gt;%
   tally(name = &quot;dv_count&quot;) %&gt;%
   right_join(population_18, by = &quot;CensusBloc&quot;) %&gt;%
-  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population)
+  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population) %&gt;%
+  st_as_sf(crs=st_crs(chicago_cbg))
 
 cbg_dv_march20 &lt;- chicago_cbg_dv %&gt;%
   filter(date &gt;= &quot;2020-03-01&quot; &amp; date &lt;= &quot;2020-03-31&quot;) %&gt;%
   group_by(CensusBloc) %&gt;%
   tally(name = &quot;dv_count&quot;) %&gt;%
   right_join(population_18, by = &quot;CensusBloc&quot;) %&gt;%
-  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population)
+  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population) %&gt;%
+  st_as_sf(crs=st_crs(chicago_cbg))
 
 cbg_dv_april20 &lt;- chicago_cbg_dv %&gt;%
   filter(date &gt;= &quot;2020-04-01&quot; &amp; date &lt;= &quot;2020-04-30&quot;) %&gt;%
   group_by(CensusBloc) %&gt;%
   tally(name = &quot;dv_count&quot;) %&gt;%
   right_join(population_18, by = &quot;CensusBloc&quot;) %&gt;%
-  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population)
+  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population) %&gt;%
+  st_as_sf(crs=st_crs(chicago_cbg))
 
 # replace_na learned from the official document:
 # https://dplyr.tidyverse.org/reference/tally.html</code></pre>
@@ -583,59 +580,86 @@ ggplot(data = dv_count_week, aes(x = week, y = dv_count, group = 1)) +
   geom_line(color = dv_col, lwd = 0.8, alpha=0.7) +
   geom_point(color = dv_col, alpha=0.7) +
   scale_x_date(date_labels = &quot;%b %Y&quot;, date_breaks = &quot;1 months&quot;) +
-  labs(x = &quot;Month&quot;, y = &quot;Count of Domestic Violence&quot;) +
+  labs(title=&quot;Reported Domestic Violence Over Time&quot;, x = &quot;Month&quot;, y = &quot;Count of Domestic Violence&quot;) +
   theme_light() +
   theme(axis.text.x = element_text(angle=45, hjust = 1))</code></pre>
-<p><img src="index_files/figure-html/lineplot-1.png" width="672" /></p>
-<pre class="r"><code>map_dv_march19 &lt;- ggplot(data=cbg_dv_march19, aes(geometry=geometry)) +
-  geom_sf(aes(fill = dv_rate), lwd=0.3) +
-  scale_fill_viridis(option=&quot;viridis&quot;, direction = -1) +
-  theme_minimal() +
-  # theme(legend.position = &#39;bottom&#39;) +
-  # theme(axis.line = element_blank(), axis.text = element_blank(),
-  #       axis.ticks = element_blank(), axis.title = element_blank()) +
-  labs(title = &quot;Domestic violence rate in March 2019&quot;,
-       fill = &quot;Domestic violence rate&quot;)
-
-map_dv_april19 &lt;- ggplot(data=cbg_dv_april19, aes(geometry=geometry)) +
+<p><img src="index_files/figure-html/lineplot-1.png" width="960" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>map_dv_march19 &lt;- ggplot(data=cbg_dv_march19) +
   geom_sf(aes(fill = dv_rate), lwd=0.3) +
   scale_fill_viridis(option=&quot;magma&quot;, direction = -1) +
   theme_minimal() +
-  # theme(legend.position = &#39;bottom&#39;) +
-  # theme(axis.line = element_blank(), axis.text = element_blank(),
-  #       axis.ticks = element_blank(), axis.title = element_blank()) +
+  theme(legend.position = &#39;bottom&#39;) +
+  labs(title = &quot;Domestic violence rate in March 2019&quot;,
+       fill = &quot;Domestic violence rate&quot;)
+
+map_dv_april19 &lt;- ggplot(data=cbg_dv_april19) +
+  geom_sf(aes(fill = dv_rate), lwd=0.3) +
+  scale_fill_viridis(option=&quot;magma&quot;, direction = -1) +
+  theme_minimal() +
+  theme(legend.position = &#39;bottom&#39;) +
   labs(title = &quot;Domestic violence rate in April 2019&quot;,
        fill = &quot;Domestic violence rate&quot;)
 
-map_dv_march20 &lt;- ggplot(data=cbg_dv_march20, aes(geometry=geometry)) +
+map_dv_march20 &lt;- ggplot(data=cbg_dv_march20) +
   geom_sf(aes(fill = dv_rate), lwd=0.3) +
-  scale_fill_viridis(option=&quot;plasma&quot;, direction = -1) +
+  scale_fill_viridis(option=&quot;magma&quot;, direction = -1) +
   theme_minimal() +
-  # theme(legend.position = &#39;bottom&#39;) +
-  # theme(axis.line = element_blank(), axis.text = element_blank(),
-  #       axis.ticks = element_blank(), axis.title = element_blank()) +
+  theme(legend.position = &#39;bottom&#39;) +
   labs(title = &quot;Domestic violence rate in March 2020&quot;,
        fill = &quot;Domestic violence rate&quot;)
 
-map_dv_april20 &lt;- ggplot(data=cbg_dv_april20, aes(geometry=geometry)) +
+map_dv_april20 &lt;- ggplot(data=cbg_dv_april20) +
   geom_sf(aes(fill = dv_rate), lwd=0.3) +
-  scale_fill_viridis(option=&quot;inferno&quot;, direction = -1) +
+  scale_fill_viridis(option=&quot;magma&quot;, direction = -1) +
   theme_minimal() +
-  # theme(legend.position = &#39;bottom&#39;) +
-  # theme(axis.line = element_blank(), axis.text = element_blank(),
-  #       axis.ticks = element_blank(), axis.title = element_blank()) +
+  theme(legend.position = &#39;bottom&#39;) +
   labs(title = &quot;Domestic violence rate in April 2020&quot;,
        fill = &quot;Domestic violence rate&quot;)
 
-print(map_dv_march19)
-print(map_dv_april19)
-print(map_dv_march20)
-print(map_dv_april20)
-
+grid.arrange(map_dv_march19, map_dv_march20, map_dv_april19, map_dv_april20, nrow=2, ncol=2)
 
 # Reverse color palette:
-# https://stackoverflow.com/questions/45868625/how-to-reverse-the-default-color-palette-for-ggplot2</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-5-1.png" width="3500" style="display: block; margin: auto;" /><img src="index_files/figure-html/unnamed-chunk-5-2.png" width="3500" style="display: block; margin: auto;" /><img src="index_files/figure-html/unnamed-chunk-5-3.png" width="3500" style="display: block; margin: auto;" /><img src="index_files/figure-html/unnamed-chunk-5-4.png" width="3500" style="display: block; margin: auto;" /></p>
+# https://stackoverflow.com/questions/45868625/how-to-reverse-the-default-color-palette-for-ggplot2
+# grid.arrange refers to:
+# https://cran.r-project.org/web/packages/egg/vignettes/Ecosystem.html</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-4-1.png" width="6000" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>median_col &lt;- brewer.pal(8, &quot;Pastel2&quot;)[1]
+
+hist_median18 &lt;- ggplot(data = median_income_18, aes(x=median_income)) +
+  geom_histogram(fill=median_col, col=&quot;grey50&quot;, binwidth = 10000) +
+  theme_classic() +
+  labs(title = &quot;Histogram of Median Household Income&quot;, x=&quot;Median Household Income&quot;, y=&quot;Count&quot;)
+
+map_median18 &lt;- ggplot(data=median_income_18) +
+  geom_sf(aes(fill = median_income), lwd=0.3) +
+  scale_fill_viridis(option=&quot;viridis&quot;, direction = -1) +
+  theme_minimal() +
+  theme(axis.line = element_blank(), axis.text = element_blank(),
+        axis.ticks = element_blank(), axis.title = element_blank()) +
+  labs(title = &quot;Median Household Income in 2018&quot;,
+       fill = &quot;Median household\nincome&quot;)
+# make sure the NA CBGs
+
+grid.arrange(map_median18, hist_median18, ncol=2, widths=2:1)</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-5-1.png" width="1152" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>unemployed_col &lt;- brewer.pal(8, &quot;Pastel2&quot;)[2]
+
+hist_unemployed18 &lt;- ggplot(data = employment_18, aes(x=unemployment_rate)) +
+  geom_histogram(fill=unemployed_col, col=&quot;grey50&quot;, binwidth = 0.04) +
+  theme_classic() +
+  labs(title = &quot;Histogram of Unemployment Rate&quot;, x=&quot;Unemployment Rate&quot;, y=&quot;Count&quot;)
+
+map_unemployed18 &lt;- ggplot(data=employment_18) +
+  geom_sf(aes(fill = unemployment_rate), lwd=0.3) +
+  scale_fill_viridis(option=&quot;viridis&quot;, direction = -1) +
+  theme_minimal() +
+  theme(axis.line = element_blank(), axis.text = element_blank(),
+        axis.ticks = element_blank(), axis.title = element_blank()) +
+  labs(title = &quot;Unemployment Rate in 2018&quot;,
+       fill = &quot;Unemployment rate&quot;)
+
+grid.arrange(map_unemployed18, hist_unemployed18, ncol=2, widths=2:1)</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-6-1.png" width="1152" style="display: block; margin: auto;" /></p>
 </div>
 <div id="conclusions" class="section level1">
 <h1>Conclusions</h1>
