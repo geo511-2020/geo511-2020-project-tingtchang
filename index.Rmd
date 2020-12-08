@@ -2,17 +2,19 @@
 title: "Reported Domestic Violence in Chicago City, IL"
 author: Ting Chang
 subtitle: "Before and After the COVID-19 Lockdown"
+output:
+  html_document:
+    number_sections: true
 ---
 
 # Introduction
-
 The surging cases of COVID-19 in spring 2020 has caused governments around the world to announce the lockdown policy (stay home order) in order to slow down the spread of pandemic. While COVID-19 is a worldwide health crisis, some researchers have expressed concern for another crucial health threat, domestic violence, which is expected to increase while more people were constrained at home.
 
 This project aims to explore the spatial and temporal distribution of the domestic violence in Chicago City, Illinois using the crime reported data. In particularly, to examine whether the reported domestic violence has increased as expected after the implementation of lockdown.
 
 
 # Materials and methods
-## Set up
+## Set Up
 In order to run the code below, firstly, we need to load the following packages in R, you might need to install some of them in ahead. If your environment and locale is not set to English, utilizing the two lines start with `Sys.`, it would help plotting the date label in English. Otherwise, please comment out these two lines.
 
 ```{r setup, message=F, warning=F, results='hide'}
@@ -36,9 +38,29 @@ Sys.setlocale("LC_ALL", "English")
 # https://stackoverflow.com/questions/15438429/axis-labels-are-not-plotted-in-english
 ```
 
-
 ## Data Import and Processing
-### Chicago City's Census Block Group Shapefile
+In this part, our goal is to prepare the data for the analysis below. We want to obtain the following data:  
+
+* The basic geographic unit for the analysis:  
+  * census block group spatial data  
+
+* The primary variable for our analysis:  
+  * Domestic violence count  
+  * Domestic violence rate  
+
+* The social-economics factors for the domestic violence:  
+  * Crime rate  
+  * Median household income  
+  * Unemployment rate  
+
+And we will obtain these datasets from the following data source:  
+
+* Census TIGER data (Data has already been processed and provided in the data folder.)  
+* Census data - American Community Survey 5-year estimated (2018)  
+* Crime reported data from Chicago Data Portal  
+
+### Chicago City's census block group shapefile
+#### Load the data {.unnumbered}
 The Chicago City's census block group shapefile is provided in the data folder. I have obtained it previously from the census TIGER data.
 
 ```{r shapefile, message=F, warning=F, results='hide'}
@@ -47,8 +69,8 @@ chicago_cbg <- st_read("data/chicago_cbg.shp") %>%
   select(CensusBloc)
 ```
 
-
-### Census Data
+### Census data
+#### Data download {.unnumbered}
 We will download several datasets from the American Community Survey 5-Year data at the census block group level using the lovely package, tidycensus. Since the newest released estimated data is the 2018 year version, we will download data from 2018.
 
 ```{r census, message=F, warning=F, results='hide'}
@@ -78,6 +100,7 @@ employment_18 <- get_acs(geography = "block group",
                          output = "wide")
 ```
 
+#### Data Processing {.unnumbered}
 Afterwards, we will crop the obtained census data to the Chicago City using the pre-loaded shapefile and slightly tidy up our data.
 
 ```{r census-cropped, message=F, warning=F, results='hide'}
@@ -96,9 +119,9 @@ employment_18 <- left_join(chicago_cbg, employment_18, by = c("CensusBloc" = "GE
   mutate(unemployment_rate = unemployed/total_in_labor)
 ```
 
-
-### Crime Reported Data {.tabset}
-The crime reported data will be obtained from the [Chicago Data Portal](https://data.cityofchicago.org/Public-Safety/Crimes-2001-to-Present/ijzp-q8t2) via Socrata Open Data API.
+### Crime reported data
+#### Data download {.unnumbered}
+The crime reported data will be obtained from the [Chicago Data Portal](https://data.cityofchicago.org/Public-Safety/Crimes-2001-to-Present/ijzp-q8t2) via Socrata Open Data API. If the API does not work, try download the `.csv file` from the provided link.
 
 ```{r crime-report, message=F, warning=F, results='hide'}
 # Download crime reported data and load it in R
@@ -122,7 +145,10 @@ chicago_crime_clean <- chicago_crime %>%
 # Learn paste() function from:
 # https://stackoverflow.com/questions/27378116/how-to-change-a-file-path-in-r-with-a-constant
 ```
-Then, we will apply the spatial join function `st_join` to compute which census block group did each crime incident occur.
+
+#### Data preparation {.unnumbered}
+##### Add the census block group information {.unnumbered}
+Then, we will apply the spatial join function `st_join` to compute which census block group did each crime incident occur and add it to our crime record dataframe.
 
 ```{r crime-cbg, message=F, warning=F, results='hide'}
 # Convert crime reported data to sf object
@@ -134,59 +160,13 @@ chicago_crime_cbg <- st_join(chicago_crime_clean, chicago_cbg) %>%
   st_set_geometry(NULL)
 ```
 
-All the pre-processing works for crime reported data have been done now. Next, we will work on deriving the crime rate. Furthermore, we will extract the domestic violence reported data, calculate the domestic violence counts by week, as well as derive the domestic violence rate.
+##### Domestic Violence reported data {.unnumbered}
+Once we have finished processing the crime reported data, we can now use it to obtain the domestic violence reported data. We will utilize three columns from the obtained crime records to extract the domestic violence records:  
 
+* `domestic`: Whether the incident was domestic-related as defined by the Illinois Domestic Violence Act.
+* `location_description`: The location where the incident occurred.
+* `primary_type`: The primary description of the IUCR code.
 
-#### Crime Rate
-To obtain the crime rate for each census block group, we will first compute the number of crime that had occurred within each census block group in different months. Then we will normalize the crime counts by the population size of each census block group.
-
-```{r crime-rate, message=F, warning=F, results='hide'}
-cbg_crime_march19 <- chicago_crime_cbg %>%
-  # filter the data by month
-  filter(date >= "2019-03-01" & date <= "2019-03-31") %>%   
-  # count the number of crimes occurred in each CBG
-  group_by(CensusBloc) %>%
-  tally(name = "crime_count") %>%
-  # join crime data with population dataframe
-  right_join(population_18, by = "CensusBloc") %>%
-  # normalize crime by population size of each CBG
-  mutate(crime_count = replace_na(crime_count, 0), crime_rate = crime_count/population) %>%
-  # convert dataframe to sf object
-  st_as_sf(crs=st_crs(chicago_cbg))
-
-cbg_crime_april19 <- chicago_crime_cbg %>%
-  filter(date >= "2019-04-01" & date <= "2019-04-30") %>%   
-  group_by(CensusBloc) %>%
-  tally(name = "crime_count") %>%
-  right_join(population_18, by = "CensusBloc") %>%
-  mutate(crime_count = replace_na(crime_count, 0), crime_rate = crime_count/population) %>%
-  st_as_sf(crs=st_crs(chicago_cbg))
-
-cbg_crime_march20 <- chicago_crime_cbg %>%
-  filter(date >= "2020-03-01" & date <= "2020-03-31") %>%   
-  group_by(CensusBloc) %>%
-  tally(name = "crime_count") %>%
-  right_join(population_18, by = "CensusBloc") %>%
-  mutate(crime_count = replace_na(crime_count, 0), crime_rate = crime_count/population) %>%
-  st_as_sf(crs=st_crs(chicago_cbg))
-
-cbg_crime_april20 <- chicago_crime_cbg %>%
-  filter(date >= "2020-04-01" & date <= "2020-04-30") %>%   
-  group_by(CensusBloc) %>%
-  tally(name = "crime_count") %>%
-  right_join(population_18, by = "CensusBloc") %>%
-  mutate(crime_count = replace_na(crime_count, 0), crime_rate = crime_count/population) %>%
-  st_as_sf(crs=st_crs(chicago_cbg))
-
-# replace_na learned from the official document:
-# https://dplyr.tidyverse.org/reference/tally.html
-# Count observations learned from official document:
-# https://dplyr.tidyverse.org/reference/tally.html
-```
-
-
-#### Domestic Violence Reported Data
-To obtain the domestic violence reported data, we will utilize the domestic violence column, location description column, as well as primary crime type column to filter the domestic violence reported data.
 
 ```{r dv-process, message=F, warning=F, results='hide'}
 # Filter out only the DV occurred in residential place
@@ -231,35 +211,90 @@ chicago_dv_cbg <- chicago_crime_cbg %>%
   filter(domestic == TRUE & location_description %in% list_location & primary_type %in% list_crime_type)
 ```
 
+#### Data processing {.tabset .unnumbered} 
+All the preparing works for crime reported data and domestic violence reported data have been done now. Next, we will work on deriving the related variables what will be used in the analysis, including the crime rate of census block groups, the domestic violence rate of census block group, and the total domestic violence counts by week.
 
-#### Domestic Violence Count by Week
-The domestic violence count aggregated by week can be easily obtained by means of the `dplyr` functions.
+##### Crime rate {.unnumbered}
+To obtain the crime rate for each census block group, we will first compute the number of crime that had occurred within each census block group in different months. Then we will normalize the crime counts by the population size of each census block group. The below code shows how to derive the crime rate for March 2019. And the code could be applied for obtaining different months (or any desired range).
 
-```{r dv-count-week, message=F, warning=F, results='hide'}
-dv_count_week <- chicago_dv_cbg %>%
-  group_by(week = cut(date, "week")) %>%
-  tally(name = "dv_count") %>%
-  mutate(week = as.Date(week))
+```{r crime-rate-march-2019, message=F, warning=F, results='hide' }
+cbg_crime_march19 <- chicago_crime_cbg %>%
+  # filter the data by month
+  filter(date >= "2019-03-01" & date <= "2019-03-31") %>%   # date could be changed to desired range
+  # count the number of crimes occurred in each CBG
+  group_by(CensusBloc) %>%
+  tally(name = "crime_count") %>%
+  # join crime data with population dataframe
+  right_join(population_18, by = "CensusBloc") %>%
+  # normalize crime by population size of each CBG
+  mutate(crime_count = replace_na(crime_count, 0), crime_rate = crime_count/population) %>%
+  # convert dataframe to sf object
+  st_as_sf(crs=st_crs(chicago_cbg))
 
-# Aggregate by week learned from:
-# https://stackoverflow.com/questions/40554231/dplyr-lubridate-how-to-aggregate-a-dataframe-by-week/40554522
+# replace_na learned from the official document:
+# https://dplyr.tidyverse.org/reference/tally.html
+# Count observations learned from official document:
+# https://dplyr.tidyverse.org/reference/tally.html
 ```
 
+```{r crime-rate, echo=F, message=F, warning=F, results='hide'}
+cbg_crime_april19 <- chicago_crime_cbg %>%
+  filter(date >= "2019-04-01" & date <= "2019-04-30") %>%   
+  group_by(CensusBloc) %>%
+  tally(name = "crime_count") %>%
+  right_join(population_18, by = "CensusBloc") %>%
+  mutate(crime_count = replace_na(crime_count, 0), crime_rate = crime_count/population) %>%
+  st_as_sf(crs=st_crs(chicago_cbg))
 
-#### Domestic Violence Rate
-The domestic violence rate will be derived using the same method as crime rate. 
+cbg_crime_march20 <- chicago_crime_cbg %>%
+  filter(date >= "2020-03-01" & date <= "2020-03-31") %>%   
+  group_by(CensusBloc) %>%
+  tally(name = "crime_count") %>%
+  right_join(population_18, by = "CensusBloc") %>%
+  mutate(crime_count = replace_na(crime_count, 0), crime_rate = crime_count/population) %>%
+  st_as_sf(crs=st_crs(chicago_cbg))
 
-```{r dv-rate, message=F, warning=F, results='hide'}
+cbg_crime_april20 <- chicago_crime_cbg %>%
+  filter(date >= "2020-04-01" & date <= "2020-04-30") %>%   
+  group_by(CensusBloc) %>%
+  tally(name = "crime_count") %>%
+  right_join(population_18, by = "CensusBloc") %>%
+  mutate(crime_count = replace_na(crime_count, 0), crime_rate = crime_count/population) %>%
+  st_as_sf(crs=st_crs(chicago_cbg))
+```
+
+##### Domestic violence rate {.unnumbered}
+The domestic violence rate will be derived using the same method as crime rate. The below code shows how to compute the domestic violence rate for March 2019. The code could be applied for obtaining different months (or any desired range).
+
+```{r dv-rate-march-2019, message=F, warning=F, results='hide'}
 cbg_dv_march19 <- chicago_dv_cbg %>%
-  filter(date >= "2019-03-01" & date <= "2019-03-31") %>%   
+  filter(date >= "2019-03-01" & date <= "2019-03-31") %>%   # date could be changed to desired range
+  group_by(CensusBloc) %>%
+  tally(name = "dv_count") %>%
+  right_join(population_18, by = "CensusBloc") %>%
+  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population) %>%
+  st_as_sf(crs=st_crs(chicago_cbg))
+```
+
+```{r dv-rate, echo=F, message=F, warning=F, results='hide'}
+cbg_dv_april19 <- chicago_dv_cbg %>%
+  filter(date >= "2019-04-01" & date <= "2019-04-30") %>%
   group_by(CensusBloc) %>%
   tally(name = "dv_count") %>%
   right_join(population_18, by = "CensusBloc") %>%
   mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population) %>%
   st_as_sf(crs=st_crs(chicago_cbg))
 
-cbg_dv_april19 <- chicago_dv_cbg %>%
-  filter(date >= "2019-04-01" & date <= "2019-04-30") %>%
+cbg_dv_may19 <- chicago_dv_cbg %>%
+  filter(date >= "2019-05-01" & date <= "2019-05-31") %>%   
+  group_by(CensusBloc) %>%
+  tally(name = "dv_count") %>%
+  right_join(population_18, by = "CensusBloc") %>%
+  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population) %>%
+  st_as_sf(crs=st_crs(chicago_cbg))
+
+cbg_dv_june19 <- chicago_dv_cbg %>%
+  filter(date >= "2019-06-01" & date <= "2019-06-30") %>%   
   group_by(CensusBloc) %>%
   tally(name = "dv_count") %>%
   right_join(population_18, by = "CensusBloc") %>%
@@ -276,6 +311,22 @@ cbg_dv_march20 <- chicago_dv_cbg %>%
 
 cbg_dv_april20 <- chicago_dv_cbg %>%
   filter(date >= "2020-04-01" & date <= "2020-04-30") %>%
+  group_by(CensusBloc) %>%
+  tally(name = "dv_count") %>%
+  right_join(population_18, by = "CensusBloc") %>%
+  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population) %>%
+  st_as_sf(crs=st_crs(chicago_cbg))
+
+cbg_dv_may20 <- chicago_dv_cbg %>%
+  filter(date >= "2020-05-01" & date <= "2020-05-31") %>%
+  group_by(CensusBloc) %>%
+  tally(name = "dv_count") %>%
+  right_join(population_18, by = "CensusBloc") %>%
+  mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population) %>%
+  st_as_sf(crs=st_crs(chicago_cbg))
+
+cbg_dv_june20 <- chicago_dv_cbg %>%
+  filter(date >= "2020-06-01" & date <= "2020-06-30") %>%
   group_by(CensusBloc) %>%
   tally(name = "dv_count") %>%
   right_join(population_18, by = "CensusBloc") %>%
@@ -299,18 +350,51 @@ cbg_dv_april20 <- chicago_dv_cbg %>%
 # # https://cengel.github.io/R-spatial/mapping.html
 ```
 
+```{r merge-dv-rate, eval=F, echo=F}
+monthly_dv_rate <- select(cbg_dv_march19, CensusBloc, March2019 = dv_rate) %>%
+  st_set_geometry(NULL) %>%
+  left_join(cbg_dv_april19, by="CensusBloc") %>%
+  select(CensusBloc, March2019, April2019 = dv_rate) %>%
+  
+  left_join(cbg_dv_may19, by="CensusBloc") %>%
+  select(CensusBloc, March2019, April2019, May2019 = dv_rate) %>%
+  
+  left_join(cbg_dv_june19, by="CensusBloc") %>%
+  select(CensusBloc, March2019, April2019, May2019, June2019 = dv_rate) %>%
+  
+  left_join(cbg_dv_march20, by="CensusBloc") %>%
+  select(CensusBloc, March2019, April2019, May2019, June2019, March2020 = dv_rate) %>%
+  
+  left_join(cbg_dv_april20, by="CensusBloc") %>%
+  select(CensusBloc, March2019, April2019, May2019, June2019, March2020, April2020 = dv_rate) %>%
+  
+  left_join(cbg_dv_may20, by="CensusBloc") %>%
+  select(CensusBloc, March2019, April2019, May2019, June2019, March2020, April2020, May2020 = dv_rate) %>%
+  
+  left_join(cbg_dv_june20, by="CensusBloc") %>%
+  select(CensusBloc, March2019, April2019, May2019, June2019, March2020, April2020, May2020, June2020 = dv_rate)
+```
+
+##### Domestic violence count for each week {.unnumbered}
+The domestic violence count aggregated by week can be easily obtained by means of the `dplyr` functions.
+
+```{r dv-count-week, message=F, warning=F, results='hide'}
+dv_count_week <- chicago_dv_cbg %>%
+  group_by(week = cut(date, "week")) %>%
+  tally(name = "dv_count") %>%
+  mutate(week = as.Date(week))
+
+# Aggregate by week learned from:
+# https://stackoverflow.com/questions/40554231/dplyr-lubridate-how-to-aggregate-a-dataframe-by-week/40554522
+```
+
+
 # Results
-
-[~200 words]
-
-Tables and figures (maps and other graphics) are carefully planned to convey the results of your analysis. Intense exploration and evidence of many trials and failures. The author looked at the data in many different ways before coming to the final presentation of the data.
-
-Show tables, plots, etc. and describe them.
-
+## The Temporal Distribution of Domestic Violence
 
 Lineplot of domestic violence count
 
-```{r lineplot, message=F, warning=F, fig.align='center', fig.width=10, fig.height=5}
+```{r lineplot, echo=F, message=F, warning=F, fig.align='center', fig.width=10, fig.height=5}
 dv_col <- brewer.pal(8, "Dark2")[2]
 
 ggplot(data = dv_count_week, aes(x = week, y = dv_count, group = 1)) +
@@ -322,48 +406,130 @@ ggplot(data = dv_count_week, aes(x = week, y = dv_count, group = 1)) +
   theme(axis.text.x = element_text(angle=45, hjust = 1))
 ```
 
-```{r, fig.show='hold', fig.align='center', fig.width=12, fig.height=15, dpi=500}
+## The Spatial Distribution of Domestic Violence Rate
+### The variation between March to June (2019 and 2020)
+
+#### 2019 year {.tabset .unnumbered }
+
+##### March 2019 {.unnumbered}
+```{r march-2019, echo=F, fig.align='center'}
 map_dv_march19 <- ggplot(data=cbg_dv_march19) +
   geom_sf(aes(fill = dv_rate), lwd=0.3) +
   scale_fill_viridis(option="magma", direction = -1) +
   theme_minimal() +
-  theme(legend.position = 'bottom') +
   labs(title = "Domestic violence rate in March 2019",
        fill = "Domestic violence rate")
 
+map_dv_march19
+
+# Reverse color palette:
+# https://stackoverflow.com/questions/45868625/how-to-reverse-the-default-color-palette-for-ggplot2
+```
+
+##### April 2019 {.unnumbered}
+```{r april-2019, echo=F, fig.align='center'}
 map_dv_april19 <- ggplot(data=cbg_dv_april19) +
   geom_sf(aes(fill = dv_rate), lwd=0.3) +
   scale_fill_viridis(option="magma", direction = -1) +
   theme_minimal() +
-  theme(legend.position = 'bottom') +
   labs(title = "Domestic violence rate in April 2019",
        fill = "Domestic violence rate")
 
+map_dv_april19
+```
+
+##### May 2019 {.unnumbered}
+```{r may-2019, echo=F, fig.align='center'}
+map_dv_may19 <- ggplot(data=cbg_dv_may19) +
+  geom_sf(aes(fill = dv_rate), lwd=0.3) +
+  scale_fill_viridis(option="magma", direction = -1) +
+  theme_minimal() +
+  labs(title = "Domestic violence rate in May 2019",
+       fill = "Domestic violence rate")
+
+map_dv_may19
+```
+
+##### June 2019 {.unnumbered}
+```{r june-2019, echo=F, fig.align='center'}
+map_dv_june19 <- ggplot(data=cbg_dv_june19) +
+  geom_sf(aes(fill = dv_rate), lwd=0.3) +
+  scale_fill_viridis(option="magma", direction = -1) +
+  theme_minimal() +
+  labs(title = "Domestic violence rate in June 2019",
+       fill = "Domestic violence rate")
+
+map_dv_june19
+```
+
+#### 2020 year {.tabset .unnumbered }
+
+##### March 2020 {.unnumbered}
+```{r march-2020, echo=F, fig.align='center'}
 map_dv_march20 <- ggplot(data=cbg_dv_march20) +
   geom_sf(aes(fill = dv_rate), lwd=0.3) +
   scale_fill_viridis(option="magma", direction = -1) +
   theme_minimal() +
-  theme(legend.position = 'bottom') +
   labs(title = "Domestic violence rate in March 2020",
        fill = "Domestic violence rate")
 
+map_dv_march20
+```
+
+##### April 2020 {.unnumbered}
+```{r april-2020, echo=F, fig.align='center'}
 map_dv_april20 <- ggplot(data=cbg_dv_april20) +
   geom_sf(aes(fill = dv_rate), lwd=0.3) +
   scale_fill_viridis(option="magma", direction = -1) +
   theme_minimal() +
-  theme(legend.position = 'bottom') +
   labs(title = "Domestic violence rate in April 2020",
        fill = "Domestic violence rate")
 
+map_dv_april20
+```
+
+##### May 2020 {.unnumbered}
+```{r may-2020, echo=F, fig.align='center'}
+map_dv_may20 <- ggplot(data=cbg_dv_may20) +
+  geom_sf(aes(fill = dv_rate), lwd=0.3) +
+  scale_fill_viridis(option="magma", direction = -1) +
+  theme_minimal() +
+  labs(title = "Domestic violence rate in May 2020",
+       fill = "Domestic violence rate")
+
+map_dv_may20
+```
+
+##### June 2020 {.unnumbered}
+```{r june-2020, echo=F, fig.align='center'}
+map_dv_june20 <- ggplot(data=cbg_dv_june20) +
+  geom_sf(aes(fill = dv_rate), lwd=0.3) +
+  scale_fill_viridis(option="magma", direction = -1) +
+  theme_minimal() +
+  labs(title = "Domestic violence rate in June 2020",
+       fill = "Domestic violence rate")
+
+map_dv_june20
+```
+
+### Zoom in to March and April
+```{r dv-summary, echo=F, fig.show='hold', fig.align='center', fig.width=12, fig.height=15, dpi=500}
+map_dv_march19 <- map_dv_march19+theme(legend.position = 'bottom')
+map_dv_april19 <- map_dv_april19+theme(legend.position = 'bottom')
+map_dv_march20 <- map_dv_march20+theme(legend.position = 'bottom')
+map_dv_april20 <- map_dv_april20+theme(legend.position = 'bottom')
+
 grid.arrange(map_dv_march19, map_dv_march20, map_dv_april19, map_dv_april20, nrow=2, ncol=2)
 
-# Reverse color palette:
-# https://stackoverflow.com/questions/45868625/how-to-reverse-the-default-color-palette-for-ggplot2
 # grid.arrange refers to:
 # https://cran.r-project.org/web/packages/egg/vignettes/Ecosystem.html
 ```
 
-```{r, message=F, warning=F, fig.align='center', fig.width=12, fig.height=6}
+
+## The Socio-economic Factors for Domestic Violence {.tabset}
+### Median household income {.unnumbered}
+
+```{r median-in, echo=F, message=F, warning=F, fig.align='center', fig.width=12, fig.height=6}
 median_col <- brewer.pal(8, "Pastel2")[1]
 
 hist_median18 <- ggplot(data = median_income_18, aes(x=median_income)) +
@@ -384,7 +550,8 @@ map_median18 <- ggplot(data=median_income_18) +
 grid.arrange(map_median18, hist_median18, ncol=2, widths=2:1)
 ```
 
-```{r, message=F, warning=F, fig.align='center', fig.width=12, fig.height=6}
+### Unemployment rate {.unnumbered}
+```{r employ, echo=F, message=F, warning=F, fig.align='center', fig.width=12, fig.height=6}
 unemployed_col <- brewer.pal(8, "Pastel2")[2]
 
 hist_unemployed18 <- ggplot(data = employment_18, aes(x=unemployment_rate)) +
@@ -403,6 +570,60 @@ map_unemployed18 <- ggplot(data=employment_18) +
 
 grid.arrange(map_unemployed18, hist_unemployed18, ncol=2, widths=2:1)
 ```
+
+### Crime rate {.unnumbered .tabset}
+#### March 2019 {.unnumbered}
+```{r crime-march-2019, echo=F, fig.align='center'}
+map_crime_march19 <- ggplot(data=cbg_crime_march19) +
+  geom_sf(aes(fill = crime_rate), lwd=0.3) +
+  scale_fill_viridis(option="cividis", direction = -1) +
+  theme_minimal() +
+  labs(title = "Crime rate in March 2019",
+       fill = "Crime rate")
+
+map_crime_march19
+```
+
+#### April 2019 {.unnumbered}
+```{r crime-april-2019, echo=F, fig.align='center'}
+map_crime_april19 <- ggplot(data=cbg_crime_april19) +
+  geom_sf(aes(fill = crime_rate), lwd=0.3) +
+  scale_fill_viridis(option="cividis", direction = -1) +
+  theme_minimal() +
+  labs(title = "Crime rate in April 2019",
+       fill = "Crime rate")
+
+map_crime_april19
+```
+
+#### March 2020 {.unnumbered}
+```{r crime-march-2020, echo=F, fig.align='center'}
+map_crime_march20 <- ggplot(data=cbg_crime_march20) +
+  geom_sf(aes(fill = crime_rate), lwd=0.3) +
+  scale_fill_viridis(option="cividis", direction = -1) +
+  theme_minimal() +
+  labs(title = "Crime rate in March 2020",
+       fill = "Crime rate")
+
+map_crime_march20
+```
+
+#### April 2020 {.unnumbered}
+```{r crime-april-2020, echo=F, fig.align='center'}
+map_crime_april20 <- ggplot(data=cbg_crime_april20) +
+  geom_sf(aes(fill = crime_rate), lwd=0.3) +
+  scale_fill_viridis(option="cividis", direction = -1) +
+  theme_minimal() +
+  labs(title = "Crime rate in April 2020",
+       fill = "Crime rate")
+
+map_crime_april20
+```
+
+# Discussion 
+In spite of researchers and health experts have pointed out that COVID-19 lockdown policy might cause the domestic violence to increase, this project have received a contrary result. One possible reason could be that while people were constrained at home, it might be more difficult for victims to reach out for help.
+
+Another reason could be that using crime reported data as data source suffers from a main issue, crime tends to be under-reporting. In particularly, domestic violence crime has been considered as one of the most under-reporting crime type.
 
 
 # Conclusions
