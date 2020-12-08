@@ -386,29 +386,14 @@ div.tocify {
 
 <div id="introduction" class="section level1">
 <h1>Introduction</h1>
-<p>[~ 200 words]</p>
-<p>Clearly stated background and questions / hypotheses / problems being addressed. Sets up the analysis in an interesting and compelling way.</p>
+<p>The surging cases of COVID-19 in spring 2020 has caused governments around the world to announce the lockdown policy (stay home order) in order to slow down the spread of pandemic. While COVID-19 is a worldwide health crisis, some researchers have expressed concern for another crucial health threat, domestic violence, which is expected to increase while more people were constrained at home.</p>
+<p>This project aims to explore the spatial and temporal distribution of the domestic violence in Chicago City, Illinois using the crime reported data. In particularly, to examine whether the reported domestic violence has increased as expected after the implementation of lockdown.</p>
 </div>
 <div id="materials-and-methods" class="section level1">
 <h1>Materials and methods</h1>
-<p>[~ 200 words]</p>
-<p>Narrative: Clear narrative description of the data sources and methods. Includes data from at least two sources that were integrated / merged in R.</p>
-<p>Code: The code associated with the project is well organized and easy to follow. Demonstrates mastery of R graphics and functions.</p>
-<p>Data: The underlying data are publicly accessible via the web and downloaded/accessed within the Rmd script. If you want to use your own data, you must make it available on a website (e.g. Figshare) so that others are able to re-run your code.</p>
-<p>You can do bullets like this:</p>
-<ul>
-<li>The first most important thing</li>
-<li>The second most important thing</li>
-<li>The third most important thing</li>
-</ul>
-<p>You can do numbers like this:</p>
-<ol style="list-style-type: decimal">
-<li>The first most important thing</li>
-<li>The second most important thing</li>
-<li>The third most important thing</li>
-</ol>
-<p>See <a href="http://rmarkdown.rstudio.com/">http://rmarkdown.rstudio.com/</a> for all the amazing things you can do.</p>
-<p>Load required packages (you may need to install some packages).</p>
+<div id="set-up" class="section level2">
+<h2>Set up</h2>
+<p>In order to run the code below, firstly, we need to load the following packages in R, you might need to install some of them in ahead. If your environment and locale is not set to English, utilizing the two lines start with <code>Sys.</code>, it would help plotting the date label in English. Otherwise, please comment out these two lines.</p>
 <pre class="r"><code>library(tidyverse)
 library(tidycensus)
 library(kableExtra)
@@ -420,15 +405,26 @@ library(gridExtra)
 library(classInt)
 
 knitr::opts_chunk$set(cache=TRUE)  # cache the results for quick compiling
+
+# For plotting date label in English
 Sys.setenv(&quot;LANGUAGE&quot;=&quot;En&quot;)
-Sys.setlocale(&quot;LC_ALL&quot;, &quot;English&quot;)</code></pre>
-<div id="download-and-clean-all-required-data" class="section level2">
-<h2>Download and clean all required data</h2>
-<p>Load chicago’s census block group shapefile from data folder</p>
+Sys.setlocale(&quot;LC_ALL&quot;, &quot;English&quot;)
+
+# Changing environment and locale language learned from: 
+# https://stackoverflow.com/questions/15438429/axis-labels-are-not-plotted-in-english</code></pre>
+</div>
+<div id="data-import-and-processing" class="section level2">
+<h2>Data Import and Processing</h2>
+<div id="chicago-citys-census-block-group-shapefile" class="section level3">
+<h3>Chicago City’s Census Block Group Shapefile</h3>
+<p>The Chicago City’s census block group shapefile is provided in the data folder. I have obtained it previously from the census TIGER data.</p>
 <pre class="r"><code># Load chicago CBG shapefile in R
 chicago_cbg &lt;- st_read(&quot;data/chicago_cbg.shp&quot;) %&gt;%
   select(CensusBloc)</code></pre>
-<p>Download census data from tidycensus.</p>
+</div>
+<div id="census-data" class="section level3">
+<h3>Census Data</h3>
+<p>We will download several datasets from the American Community Survey 5-Year data at the census block group level using the lovely package, tidycensus. Since the newest released estimated data is the 2018 year version, we will download data from 2018.</p>
 <pre class="r"><code># For searching variables from ACS-5yr 2018
 v18 &lt;- load_variables(2018, &quot;acs5&quot;, cache = TRUE)
 
@@ -452,33 +448,104 @@ employment_18 &lt;- get_acs(geography = &quot;block group&quot;,
                          state = &quot;IL&quot;,
                          county = c(&quot;Cook&quot;, &quot;DuPage&quot;),
                          year = 2018,
-                         output = &quot;wide&quot;)
-
-# Crop census data to the City of Chicago
+                         output = &quot;wide&quot;)</code></pre>
+<p>Afterwards, we will crop the obtained census data to the Chicago City using the pre-loaded shapefile and slightly tidy up our data.</p>
+<pre class="r"><code># Population data
 population_18 &lt;- left_join(chicago_cbg, population_18, by = c(&quot;CensusBloc&quot; = &quot;GEOID&quot;)) %&gt;%
   select(CensusBloc, population = estimate)
 
+# Median household income data
 median_income_18 &lt;- left_join(chicago_cbg, median_income_18, by = c(&quot;CensusBloc&quot; = &quot;GEOID&quot;)) %&gt;%
   select(CensusBloc, median_income = estimate)
 
+# Unemployment rate data
 employment_18 &lt;- left_join(chicago_cbg, employment_18, by = c(&quot;CensusBloc&quot; = &quot;GEOID&quot;)) %&gt;%
+  # calculate the unemployment rate by dividing the unemployed population by the total in labor population
   select(CensusBloc, total_in_labor = total_in_laborE, unemployed = unemployedE) %&gt;%
   mutate(unemployment_rate = unemployed/total_in_labor)</code></pre>
-<p>Download crime report data from Chicago Data Portal (access via SODA API).</p>
-<pre class="r"><code># Downloading crime report via SODA API
+</div>
+<div id="crime-reported-data" class="section level3 tabset">
+<h3 class="tabset">Crime Reported Data</h3>
+<p>The crime reported data will be obtained from the <a href="https://data.cityofchicago.org/Public-Safety/Crimes-2001-to-Present/ijzp-q8t2">Chicago Data Portal</a> via Socrata Open Data API.</p>
+<pre class="r"><code># Download crime reported data and load it in R
 dataurl = &quot;https://data.cityofchicago.org/resource/ijzp-q8t2.csv?$order=Date DESC&amp;$limit=460000&amp;$offset=20000&quot;
 tdir = tempdir()
 download.file(dataurl, destfile = file.path(tdir, &quot;chicago_crime.csv&quot;))
 
 chicago_crime &lt;- read_csv(paste(tdir,&quot;/chicago_crime.csv&quot;, sep = &quot;&quot;))
 
+# Tidy the data
 chicago_crime_clean &lt;- chicago_crime %&gt;%
   mutate(date = as.Date(date, &quot;%Y.%m.%d&quot;)) %&gt;%
   filter(as.Date(date) &gt;= &quot;2018-12-31&quot; &amp; as.Date(date) &lt;= &quot;2020-10-04&quot;) %&gt;%
-  select(-block, -iucr, -beat, -district, -ward, -community_area, -year, -location) %&gt;%
-  drop_na(latitude, longitude)</code></pre>
-<p>Process the domestic violence data</p>
-<pre class="r"><code>list_location &lt;- c(&quot;APARTMENT&quot;,
+  select(-block, -iucr, -beat, -district, -ward, -community_area, -x_coordinate, -y_coordinate, -year, -location) %&gt;%
+  drop_na(latitude, longitude)
+
+# The SODA API docs:
+# https://dev.socrata.com/foundry/data.cityofchicago.org/ijzp-q8t2
+# The SODA API query docs:
+# https://dev.socrata.com/docs/queries/
+# Learn paste() function from:
+# https://stackoverflow.com/questions/27378116/how-to-change-a-file-path-in-r-with-a-constant</code></pre>
+<p>Then, we will apply the spatial join function <code>st_join</code> to compute which census block group did each crime incident occur.</p>
+<pre class="r"><code># Convert crime reported data to sf object
+chicago_crime_clean &lt;- st_as_sf(chicago_crime_clean, coords = c(&quot;longitude&quot;, &quot;latitude&quot;),
+                                crs = st_crs(chicago_cbg))
+
+# Spatial joint the crime reported data with census block groups shapefile
+chicago_crime_cbg &lt;- st_join(chicago_crime_clean, chicago_cbg) %&gt;%
+  st_set_geometry(NULL)</code></pre>
+<p>All the pre-processing works for crime reported data have been done now. Next, we will work on deriving the crime rate. Furthermore, we will extract the domestic violence reported data, calculate the domestic violence counts by week, as well as derive the domestic violence rate.</p>
+<div id="crime-rate" class="section level4">
+<h4>Crime Rate</h4>
+<p>To obtain the crime rate for each census block group, we will first compute the number of crime that had occurred within each census block group in different months. Then we will normalize the crime counts by the population size of each census block group.</p>
+<pre class="r"><code>cbg_crime_march19 &lt;- chicago_crime_cbg %&gt;%
+  # filter the data by month
+  filter(date &gt;= &quot;2019-03-01&quot; &amp; date &lt;= &quot;2019-03-31&quot;) %&gt;%   
+  # count the number of crimes occurred in each CBG
+  group_by(CensusBloc) %&gt;%
+  tally(name = &quot;crime_count&quot;) %&gt;%
+  # join crime data with population dataframe
+  right_join(population_18, by = &quot;CensusBloc&quot;) %&gt;%
+  # normalize crime by population size of each CBG
+  mutate(crime_count = replace_na(crime_count, 0), crime_rate = crime_count/population) %&gt;%
+  # convert dataframe to sf object
+  st_as_sf(crs=st_crs(chicago_cbg))
+
+cbg_crime_april19 &lt;- chicago_crime_cbg %&gt;%
+  filter(date &gt;= &quot;2019-04-01&quot; &amp; date &lt;= &quot;2019-04-30&quot;) %&gt;%   
+  group_by(CensusBloc) %&gt;%
+  tally(name = &quot;crime_count&quot;) %&gt;%
+  right_join(population_18, by = &quot;CensusBloc&quot;) %&gt;%
+  mutate(crime_count = replace_na(crime_count, 0), crime_rate = crime_count/population) %&gt;%
+  st_as_sf(crs=st_crs(chicago_cbg))
+
+cbg_crime_march20 &lt;- chicago_crime_cbg %&gt;%
+  filter(date &gt;= &quot;2020-03-01&quot; &amp; date &lt;= &quot;2020-03-31&quot;) %&gt;%   
+  group_by(CensusBloc) %&gt;%
+  tally(name = &quot;crime_count&quot;) %&gt;%
+  right_join(population_18, by = &quot;CensusBloc&quot;) %&gt;%
+  mutate(crime_count = replace_na(crime_count, 0), crime_rate = crime_count/population) %&gt;%
+  st_as_sf(crs=st_crs(chicago_cbg))
+
+cbg_crime_april20 &lt;- chicago_crime_cbg %&gt;%
+  filter(date &gt;= &quot;2020-04-01&quot; &amp; date &lt;= &quot;2020-04-30&quot;) %&gt;%   
+  group_by(CensusBloc) %&gt;%
+  tally(name = &quot;crime_count&quot;) %&gt;%
+  right_join(population_18, by = &quot;CensusBloc&quot;) %&gt;%
+  mutate(crime_count = replace_na(crime_count, 0), crime_rate = crime_count/population) %&gt;%
+  st_as_sf(crs=st_crs(chicago_cbg))
+
+# replace_na learned from the official document:
+# https://dplyr.tidyverse.org/reference/tally.html
+# Count observations learned from official document:
+# https://dplyr.tidyverse.org/reference/tally.html</code></pre>
+</div>
+<div id="domestic-violence-reported-data" class="section level4">
+<h4>Domestic Violence Reported Data</h4>
+<p>To obtain the domestic violence reported data, we will utilize the domestic violence column, location description column, as well as primary crime type column to filter the domestic violence reported data.</p>
+<pre class="r"><code># Filter out only the DV occurred in residential place
+list_location &lt;- c(&quot;APARTMENT&quot;,
                    &quot;CHA APARTMENT&quot;,
                    &quot;CHA HALLWAY / STAIRWELL / ELEVATOR&quot;,
                    &quot;CHA HALLWAY/STAIRWELL/ELEVATOR&quot;,
@@ -498,6 +565,7 @@ chicago_crime_clean &lt;- chicago_crime %&gt;%
                    &quot;RESIDENCE-GARAGE&quot;,
                    &quot;RESIDENTIAL YARD (FRONT/BACK)&quot;)
 
+# Filter the crime type
 list_crime_type &lt;- c(&quot;ARSON&quot;,
                      &quot;ASSAULT&quot;,
                      &quot;BATTERY&quot;,
@@ -514,30 +582,32 @@ list_crime_type &lt;- c(&quot;ARSON&quot;,
                      &quot;SEX OFFENSE&quot;,
                      &quot;STALKING&quot;)
 
-chicago_dv &lt;- chicago_crime_clean %&gt;%
+chicago_dv_cbg &lt;- chicago_crime_cbg %&gt;%
   filter(domestic == TRUE &amp; location_description %in% list_location &amp; primary_type %in% list_crime_type)</code></pre>
-<pre class="r"><code>dv_count_week &lt;- chicago_dv %&gt;%
+</div>
+<div id="domestic-violence-count-by-week" class="section level4">
+<h4>Domestic Violence Count by Week</h4>
+<p>The domestic violence count aggregated by week can be easily obtained by means of the <code>dplyr</code> functions.</p>
+<pre class="r"><code>dv_count_week &lt;- chicago_dv_cbg %&gt;%
   group_by(week = cut(date, &quot;week&quot;)) %&gt;%
   tally(name = &quot;dv_count&quot;) %&gt;%
   mutate(week = as.Date(week))
 
 # Aggregate by week learned from:
-# https://stackoverflow.com/questions/40554231/dplyr-lubridate-how-to-aggregate-a-dataframe-by-week/40554522
-# Count observations learned from official document:
-# https://dplyr.tidyverse.org/reference/tally.html</code></pre>
-<pre class="r"><code>chicago_dv &lt;- st_as_sf(chicago_dv, coords = c(&quot;longitude&quot;, &quot;latitude&quot;), crs = st_crs(chicago_cbg))
-
-chicago_cbg_dv &lt;- st_join(chicago_dv, chicago_cbg) %&gt;%
-  st_set_geometry(NULL)</code></pre>
-<pre class="r"><code>cbg_dv_march19 &lt;- chicago_cbg_dv %&gt;%
-  filter(date &gt;= &quot;2019-03-01&quot; &amp; date &lt;= &quot;2019-03-31&quot;) %&gt;%
+# https://stackoverflow.com/questions/40554231/dplyr-lubridate-how-to-aggregate-a-dataframe-by-week/40554522</code></pre>
+</div>
+<div id="domestic-violence-rate" class="section level4">
+<h4>Domestic Violence Rate</h4>
+<p>The domestic violence rate will be derived using the same method as crime rate.</p>
+<pre class="r"><code>cbg_dv_march19 &lt;- chicago_dv_cbg %&gt;%
+  filter(date &gt;= &quot;2019-03-01&quot; &amp; date &lt;= &quot;2019-03-31&quot;) %&gt;%   
   group_by(CensusBloc) %&gt;%
   tally(name = &quot;dv_count&quot;) %&gt;%
   right_join(population_18, by = &quot;CensusBloc&quot;) %&gt;%
   mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population) %&gt;%
   st_as_sf(crs=st_crs(chicago_cbg))
 
-cbg_dv_april19 &lt;- chicago_cbg_dv %&gt;%
+cbg_dv_april19 &lt;- chicago_dv_cbg %&gt;%
   filter(date &gt;= &quot;2019-04-01&quot; &amp; date &lt;= &quot;2019-04-30&quot;) %&gt;%
   group_by(CensusBloc) %&gt;%
   tally(name = &quot;dv_count&quot;) %&gt;%
@@ -545,7 +615,7 @@ cbg_dv_april19 &lt;- chicago_cbg_dv %&gt;%
   mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population) %&gt;%
   st_as_sf(crs=st_crs(chicago_cbg))
 
-cbg_dv_march20 &lt;- chicago_cbg_dv %&gt;%
+cbg_dv_march20 &lt;- chicago_dv_cbg %&gt;%
   filter(date &gt;= &quot;2020-03-01&quot; &amp; date &lt;= &quot;2020-03-31&quot;) %&gt;%
   group_by(CensusBloc) %&gt;%
   tally(name = &quot;dv_count&quot;) %&gt;%
@@ -553,17 +623,15 @@ cbg_dv_march20 &lt;- chicago_cbg_dv %&gt;%
   mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population) %&gt;%
   st_as_sf(crs=st_crs(chicago_cbg))
 
-cbg_dv_april20 &lt;- chicago_cbg_dv %&gt;%
+cbg_dv_april20 &lt;- chicago_dv_cbg %&gt;%
   filter(date &gt;= &quot;2020-04-01&quot; &amp; date &lt;= &quot;2020-04-30&quot;) %&gt;%
   group_by(CensusBloc) %&gt;%
   tally(name = &quot;dv_count&quot;) %&gt;%
   right_join(population_18, by = &quot;CensusBloc&quot;) %&gt;%
   mutate(dv_count = replace_na(dv_count, 0), dv_rate = dv_count/population) %&gt;%
-  st_as_sf(crs=st_crs(chicago_cbg))
-
-# replace_na learned from the official document:
-# https://dplyr.tidyverse.org/reference/tally.html</code></pre>
-<p>Add any additional processing steps here.</p>
+  st_as_sf(crs=st_crs(chicago_cbg))</code></pre>
+</div>
+</div>
 </div>
 </div>
 <div id="results" class="section level1">
@@ -620,7 +688,7 @@ grid.arrange(map_dv_march19, map_dv_march20, map_dv_april19, map_dv_april20, nro
 # https://stackoverflow.com/questions/45868625/how-to-reverse-the-default-color-palette-for-ggplot2
 # grid.arrange refers to:
 # https://cran.r-project.org/web/packages/egg/vignettes/Ecosystem.html</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-4-1.png" width="6000" style="display: block; margin: auto;" /></p>
+<p><img src="index_files/figure-html/unnamed-chunk-1-1.png" width="6000" style="display: block; margin: auto;" /></p>
 <pre class="r"><code>median_col &lt;- brewer.pal(8, &quot;Pastel2&quot;)[1]
 
 hist_median18 &lt;- ggplot(data = median_income_18, aes(x=median_income)) +
@@ -639,7 +707,7 @@ map_median18 &lt;- ggplot(data=median_income_18) +
 # make sure the NA CBGs
 
 grid.arrange(map_median18, hist_median18, ncol=2, widths=2:1)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-5-1.png" width="1152" style="display: block; margin: auto;" /></p>
+<p><img src="index_files/figure-html/unnamed-chunk-2-1.png" width="1152" style="display: block; margin: auto;" /></p>
 <pre class="r"><code>unemployed_col &lt;- brewer.pal(8, &quot;Pastel2&quot;)[2]
 
 hist_unemployed18 &lt;- ggplot(data = employment_18, aes(x=unemployment_rate)) +
@@ -657,7 +725,7 @@ map_unemployed18 &lt;- ggplot(data=employment_18) +
        fill = &quot;Unemployment rate&quot;)
 
 grid.arrange(map_unemployed18, hist_unemployed18, ncol=2, widths=2:1)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-6-1.png" width="1152" style="display: block; margin: auto;" /></p>
+<p><img src="index_files/figure-html/unnamed-chunk-3-1.png" width="1152" style="display: block; margin: auto;" /></p>
 </div>
 <div id="conclusions" class="section level1">
 <h1>Conclusions</h1>
