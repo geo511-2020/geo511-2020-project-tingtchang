@@ -623,7 +623,7 @@ map_crime_april20
 # Discussion 
 In spite of researchers and health experts have pointed out that COVID-19 lockdown policy might cause the domestic violence to increase, this project have received a contrary result. One possible reason could be that while people were constrained at home, it might be more difficult for victims to reach out for help.
 
-Another reason could be that using crime reported data as data source suffers from a main issue, crime tends to be under-reporting. In particularly, domestic violence crime has been considered as one of the most under-reporting crime type.
+Another reason could be that using crime reported data as data source suffers from a main issue, crime tends to be under-reporting. In particularly, domestic violence crime has been considered as one of the most under-reporting crime type. 
 
 
 # Conclusions
