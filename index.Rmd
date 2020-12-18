@@ -8,9 +8,9 @@ output:
 ---
 
 # Introduction
-The surging cases of COVID-19 in spring 2020 has caused governments around the world to announce the lockdown policy (stay home order) in order to slow down the spread of pandemic. While COVID-19 is a worldwide health crisis, some researchers have expressed concern for another crucial health threat, domestic violence, which is expected to increase while more people were constrained at home.
+The surging cases of COVID-19 in spring 2020 has caused governments around the world to impose lock-down policy (stay home order) in order to slow down the spread of pandemic. While COVID-19 is a worldwide health crisis, some researchers (Ertan et al., (2020); Bradbury‐Jones and Isham, (2020))  have expressed concerns for another crucial public  health threat, domestic violence, which is expected to increase while more people were constrained at home.
 
-This project aims to explore the spatial and temporal distribution of the domestic violence in Chicago City, Illinois using the crime reported data. In particularly, to examine whether the reported domestic violence has increased as expected after the implementation of lockdown.
+This project aims to explore the spatial and temporal distribution of the domestic violence in Chicago City, Illinois using the crime reported data. In particularly, to examine whether the reported domestic violence has increased as expected after the authorities have imposed lock-down policy.
 
 
 # Materials and methods
@@ -390,26 +390,42 @@ dv_count_week <- chicago_dv_cbg %>%
 
 
 # Results
+
+This section shows the data visualization from the data we have just processed. We will first look at the temporal distribution of domestic violence then the spatial distribution of domestic violence. And finally, we will look at the spatial distribution of selected three socio-economic indicators that have been found to be related to domestic violence (Beyer, Wallis and Hamberger, (2013)).
+
 ## The Temporal Distribution of Domestic Violence
 
-Lineplot of domestic violence count
+The figure below shows the total domestic violence that has been reported in Chicago City by week. There are some seasonal patterns that can be observed from this figure. In 2019, we can observe that there's more reported domestic violence in the New Year holidays as well as summer months. And in 2020, there is also a peak during New Year holidays, however, after the lock-down has imposed (indicated as dotted line in the figure), the reported domestic violence dramatically decreased but then increased again in the summer months.
 
 ```{r lineplot, echo=F, message=F, warning=F, fig.align='center', fig.width=10, fig.height=5}
 dv_col <- brewer.pal(8, "Dark2")[2]
 
 ggplot(data = dv_count_week, aes(x = week, y = dv_count, group = 1)) +
+  geom_vline(xintercept=dv_count_week$week[64], linetype = 2, color = "grey20", lwd=1, alpha=0.5) +
   geom_line(color = dv_col, lwd = 0.8, alpha=0.7) +
   geom_point(color = dv_col, alpha=0.7) +
   scale_x_date(date_labels = "%b %Y", date_breaks = "1 months") +
+  annotate("text", x = dv_count_week$week[72], y = 650, label = "Lock-down started") +
   labs(title="Reported Domestic Violence Over Time", x = "Month", y = "Count of Domestic Violence") +
   theme_light() +
   theme(axis.text.x = element_text(angle=45, hjust = 1))
+
+# Learned date label customization from:
+# https://www.datanovia.com/en/blog/ggplot-date-axis-customization/
+# Learned adding vertical reference line from:
+# https://stackoverflow.com/questions/5388832/how-to-get-a-vertical-geom-vline-to-an-x-axis-of-class-date
+# Learned adding notation on ggplot from:
+# https://stackoverflow.com/questions/53158006/how-to-annotate-the-line-at-ggplot
 ```
 
 ## The Spatial Distribution of Domestic Violence Rate
+
+This section visualizes the spatial distribution of domestic violence in the geographic unit, census block group, by month. The maps indicate the domestic violence rate of each census block group which is calculated by the total number of reported domestic violence divided by the population size.
+
 ### The variation between March to June (2019 and 2020)
 
 #### 2019 year {.tabset .unnumbered }
+We will first look at the variation of domestic violence between March 2019 to June 2019. Note that the domestic violence rate has been plotted as continuous value and the scales vary between different maps, thus the severity of domestic violence of each month cannot be compared directly. However, there are some significant clustering patterns can be observed from the maps, furthermore, these patterns seem to appear at roughly same locations across different months. It can be implied that there are spatial autocorrelation relationships in the reported domestic violence.
 
 ##### March 2019 {.unnumbered}
 ```{r march-2019, echo=F, fig.align='center'}
@@ -464,6 +480,8 @@ map_dv_june19
 
 #### 2020 year {.tabset .unnumbered }
 
+Next, We will look at the variation of domestic violence between March 2020 to June 2020. It seems that there are fewer census block groups have reported domestic violence in March 2020 and April 2020 (More census block groups are colored as light-yellow). There are still some significant clustering patterns across each month.
+
 ##### March 2020 {.unnumbered}
 ```{r march-2020, echo=F, fig.align='center'}
 map_dv_march20 <- ggplot(data=cbg_dv_march20) +
@@ -512,21 +530,23 @@ map_dv_june20 <- ggplot(data=cbg_dv_june20) +
 map_dv_june20
 ```
 
-### Zoom in to March and April
-```{r dv-summary, echo=F, fig.show='hold', fig.align='center', fig.width=12, fig.height=15, dpi=500}
-map_dv_march19 <- map_dv_march19+theme(legend.position = 'bottom')
-map_dv_april19 <- map_dv_april19+theme(legend.position = 'bottom')
-map_dv_march20 <- map_dv_march20+theme(legend.position = 'bottom')
-map_dv_april20 <- map_dv_april20+theme(legend.position = 'bottom')
+<!-- ### Zoom in to March and April -->
+<!-- ```{r dv-summary, echo=F, fig.show='hold', fig.align='center', fig.width=12, fig.height=15, dpi=500} -->
+<!-- map_dv_march19 <- map_dv_march19+theme(legend.position = 'bottom') -->
+<!-- map_dv_april19 <- map_dv_april19+theme(legend.position = 'bottom') -->
+<!-- map_dv_march20 <- map_dv_march20+theme(legend.position = 'bottom') -->
+<!-- map_dv_april20 <- map_dv_april20+theme(legend.position = 'bottom') -->
 
-grid.arrange(map_dv_march19, map_dv_march20, map_dv_april19, map_dv_april20, nrow=2, ncol=2)
+<!-- grid.arrange(map_dv_march19, map_dv_march20, map_dv_april19, map_dv_april20, nrow=2, ncol=2) -->
 
-# grid.arrange refers to:
-# https://cran.r-project.org/web/packages/egg/vignettes/Ecosystem.html
-```
+<!-- # grid.arrange refers to: -->
+<!-- # https://cran.r-project.org/web/packages/egg/vignettes/Ecosystem.html -->
+<!-- ``` -->
 
 
-## The Socio-economic Factors for Domestic Violence {.tabset}
+## The Spatial Distribution of Socio-economic Indicators {.tabset}
+Finally, let's explore the spatial distribution of several socio-economics indicators that have been found to be related to domestic violence (Beyer, Wallis & Hamberger, (2013)). The spatial patterns of these indicators can be compared with the spatial distribution of domestic violence. It can be observed that: 1. The areas with lower median household income have higher domestic violence rate; 2. The areas with higher unemployment rate have higher domestic violence rate; 3. The areas with higher crime rate also show higher domestic violence rate.
+
 ### Median household income {.unnumbered}
 
 ```{r median-in, echo=F, message=F, warning=F, fig.align='center', fig.width=12, fig.height=6}
@@ -620,18 +640,27 @@ map_crime_april20 <- ggplot(data=cbg_crime_april20) +
 map_crime_april20
 ```
 
-# Discussion 
-In spite of researchers and health experts have pointed out that COVID-19 lockdown policy might cause the domestic violence to increase, this project have received a contrary result. One possible reason could be that while people were constrained at home, it might be more difficult for victims to reach out for help.
-
-Another reason could be that using crime reported data as data source suffers from a main issue, crime tends to be under-reporting. In particularly, domestic violence crime has been considered as one of the most under-reporting crime type.
-
-
 # Conclusions
 
-[~200 words]
+There are few points could be concluded from the above analysis:
 
-Clear summary adequately describing the results and putting them in context. Discussion of further questions and ways to continue investigation.
+* Despite several countries have reported higher domestic violence after the lock-down policy has imposed (Ertan et al., (2020); Bradbury‐Jones and Isham, (2020)), the reported domestic violence in Chicago City has actually decreased.
+
+* The domestic violence rate maps imply that there might be spatial autocorrelation relations in the reported domestic violence. It also validates the above point that there are fewer census block groups have reported domestic violence in March 2020 and April 2020.
+
+* The spatial distributions of the selected socio-economic indicators are highly associated with the distribution of  domestic violence rate.
+
+One possible reason the domestic violence has decreased after the lock-down could be that it might be more difficult for the victims to reach out for help when they were constrained at home with the main abusers. Another reason could be that using crime reported data as data source suffers from a main issue, crime tends to be under-reporting. In particular, domestic violence crime has been considered as one of the most under-reporting crime type.
+
+For the future direction of this project, I think it is crucial to look at the reasons of why reported domestic violence have decreased dramatically and to examine whether the domestic violence is under-reporting. The associations between socio-economic indicators and domestic violence might be a good starting point, if we could find more predictors for domestic violence, it might be possible to predict the domestic violence during lock-down time period. As as result, the predicted domestic violence could be compared with the reported domestic violence, and the results might give us some clues.
 
 # References
 
-All sources are cited in a consistent manner
+1. Beyer, K., Wallis, A. B., Hamberger, L. K. (2013), Neighborhood environment and intimate partner violence: a systematic review. Trauma, Violence, & Abuse, 16(1):16-47. [https://doi.org/10.1177/1524838013515758](https://doi.org/10.1177/1524838013515758)
+
+2. Bradbury‐Jones, C. and Isham, L. (2020), The pandemic paradox: The consequences of COVID‐19 on domestic violence. Journal of Clinical Nursing, (29): 2047-2049. [https://doi.org/10.1111/jocn.15296](https://doi.org/10.1111/jocn.15296)
+
+3. Ertan, D., El-Hage, W., Thierree, S., Javelot, H., and Hingray, C. (2020), COVID-19: urgency for distancing from domestic violence. European Journal of Psychotraumatology, (11), 18800245. [https://doi.org/10.1080/20008198.2020.1800245](https://doi.org/10.1080/20008198.2020.1800245)
+
+4. [Chicago Data Portal - Crime Data](https://data.cityofchicago.org/Public-Safety/Crimes-2001-to-Present/ijzp-q8t2)
+
